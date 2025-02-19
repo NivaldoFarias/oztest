@@ -1,0 +1,4 @@
+[build]
+target = "node"
+minify = true
+sourcemap = "external" 
