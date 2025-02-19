@@ -1,12 +1,4 @@
-/**
- * Application entry point that initializes the server and handles graceful shutdown.
- *
- * Imports the database configuration and server module, then starts the server if
- * this is the main module being executed.
- */
-import "./database";
-
-import server from "./server";
+import server from "@/server";
 
 if (import.meta.main) {
 	try {
@@ -14,8 +6,8 @@ if (import.meta.main) {
 
 		process.on("SIGINT", () => void shutdown());
 		process.on("SIGTERM", () => void shutdown());
-	} catch (err) {
-		console.error("Failed to start application:", err);
+	} catch (error) {
+		console.error("Failed to start application:", error);
 		process.exit(1);
 	}
 

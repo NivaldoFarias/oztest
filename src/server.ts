@@ -8,10 +8,10 @@ import type { ZodTypeProvider } from "fastify-type-provider-zod";
 
 import type { GetUsersQuery, UpdateUserBody, UserParams } from "@/schemas";
 
-import { Database } from "@/database";
-import { UserModel } from "@/models";
-import { GetUsersQuerySchema, UpdateUserBodySchema, UserParamsSchema } from "@/schemas";
-import { STATUS, validateEnv } from "@/utils";
+import { Database } from "@/database/";
+import { UserModel } from "@/models/";
+import { GetUsersQuerySchema, UpdateUserBodySchema, UserParamsSchema } from "@/schemas/";
+import { env, STATUS } from "@/utils/";
 
 /**
  * Main server class that handles HTTP requests using Fastify.
@@ -24,15 +24,12 @@ import { STATUS, validateEnv } from "@/utils";
  * ```
  */
 class Server {
-	/** Validated environment variables for server configuration */
-	private readonly env = validateEnv();
-
 	/** Database instance for MongoDB connection management */
-	private readonly database = new Database(this.env.MONGO_URI);
+	private readonly database = new Database(env.MONGO_URI);
 
 	/** Fastify instance configured with Zod for runtime type checking */
 	private readonly app = Fastify({
-		logger: { level: this.env.LOG_LEVEL },
+		logger: { level: env.LOG_LEVEL },
 	}).withTypeProvider<ZodTypeProvider>();
 
 	/**
@@ -50,9 +47,9 @@ class Server {
 	 */
 	private async setupPlugins() {
 		await this.app.register(cors, {
-			origin: this.env.CORS_ORIGIN,
-			methods: this.env.CORS_METHODS.split(","),
-			credentials: this.env.CORS_CREDENTIALS,
+			origin: env.CORS_ORIGIN,
+			methods: env.CORS_METHODS.split(","),
+			credentials: env.CORS_CREDENTIALS,
 		});
 
 		await this.app.register(sensible);
@@ -148,7 +145,7 @@ class Server {
 	 * }
 	 * ```
 	 */
-	public async start(port = this.env.PORT) {
+	public async start(port = env.PORT) {
 		try {
 			await this.database.initialize();
 			await this.app.listen({

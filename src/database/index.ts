@@ -1,4 +1,9 @@
+import fs from "fs/promises";
+
 import mongoose from "mongoose";
+
+import { DatabaseSeeder } from "@/database/seed";
+import { env } from "@/utils/env.util";
 
 /**
  * Manages MongoDB database connections and lifecycle operations.
@@ -18,11 +23,18 @@ export class Database {
 	 * await db.init();
 	 * ```
 	 */
-	constructor(private readonly mongoURI: string) {}
+	constructor(
+		private readonly mongoURI: string,
+		private readonly shouldSeed = false,
+	) {}
 
 	/**
 	 * Initializes the database connection using the provided MongoDB URI.
 	 * Establishes a connection to the database and sets up Mongoose configurations.
+	 *
+	 * ## Workflow
+	 * 1. Connect to MongoDB
+	 * 2. If in development mode and shouldSeed is true, seed the database
 	 *
 	 * @throws {Error} If the connection attempt fails due to invalid URI, network issues, or authentication problems
 	 *
@@ -39,6 +51,17 @@ export class Database {
 	public async initialize() {
 		try {
 			await mongoose.connect(this.mongoURI);
+
+			if (env.NODE_ENV === "development" && this.shouldSeed) {
+				const seeder = new DatabaseSeeder(mongoose.connection);
+
+				if (env.SEED_CONFIG_PATH.length) {
+					const seedOptions = await fs.readFile(env.SEED_CONFIG_PATH, "utf8");
+					await seeder.seed(JSON.parse(seedOptions));
+				} else {
+					await seeder.seed();
+				}
+			}
 		} catch (error) {
 			console.error("❌ MongoDB connection error:", error);
 			throw error;

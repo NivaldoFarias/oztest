@@ -6,7 +6,7 @@ import type { Ref } from "@typegoose/typegoose";
 import { TimeStamps } from "@typegoose/typegoose/lib/defaultClasses";
 import { pre, getModelForClass, prop, modelOptions } from "@typegoose/typegoose";
 
-import GeoLib from "@/utils/geo.util";
+import { GeoLibSingleton } from "@/utils/";
 
 /** Base class for all models, providing common fields */
 class Base extends TimeStamps {
@@ -17,9 +17,11 @@ class Base extends TimeStamps {
 /** User model representing application users with location data */
 @pre<User>("save", async function (next) {
 	if (this.isModified("coordinates")) {
-		this.address = await GeoLib.getAddressFromCoordinates(this.coordinates);
+		this.address = await GeoLibSingleton.getAddressFromCoordinates(this.coordinates);
 	} else if (this.isModified("address")) {
-		const { lat, lng } = await GeoLib.getCoordinatesFromAddress(this.address);
+		const { latitude: lat, longitude: lng } = await GeoLibSingleton.getCoordinatesFromAddress(
+			this.address,
+		);
 		this.coordinates = [lng, lat];
 	}
 	next();

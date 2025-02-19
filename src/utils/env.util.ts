@@ -19,7 +19,7 @@ const envSchema = z.object({
 	MONGO_URI: z.string().url("Invalid MongoDB connection string"),
 
 	// Optional Geocoding Service
-	GEOCODING_API_KEY: z.string().optional(),
+	GEOCODING_API_KEY: z.string().optional().default(""),
 
 	// Logging Configuration
 	LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("debug"),
@@ -32,6 +32,9 @@ const envSchema = z.object({
 	// Rate Limiting
 	RATE_LIMIT_MAX: z.coerce.number().positive().default(100),
 	RATE_LIMIT_WINDOW: z.coerce.number().positive().default(60_000),
+
+	// Seed Configuration
+	SEED_CONFIG_PATH: z.string().default(""),
 });
 
 /**
@@ -59,7 +62,11 @@ export type Environment = z.infer<typeof envSchema>;
  */
 export function validateEnv() {
 	try {
-		return envSchema.parse(import.meta.env);
+		const env = envSchema.parse(import.meta.env);
+
+		Object.assign(import.meta.env, env);
+
+		return env;
 	} catch (error) {
 		if (error instanceof z.ZodError) {
 			const issues = error.issues
@@ -70,3 +77,11 @@ export function validateEnv() {
 		throw error;
 	}
 }
+
+/**
+ * Validated environment configuration object.
+ * Ensures all required variables are present and correctly typed.
+ *
+ * @see {@link validateEnv}
+ */
+export const env = validateEnv();
