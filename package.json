@@ -4,9 +4,11 @@
 	"private": true,
 	"description": "DevOZ - Tech test",
 	"scripts": {
-		"build": "bun build src/scripts/server.ts",
+		"build": "bun run src/scripts/build.ts server",
+		"build:seed": "bun run src/scripts/build.ts seed",
 		"start": "node dist/server.js",
 		"dev": "bun --watch src/scripts/server.ts",
+		"dev:seed": "bun --watch src/scripts/seed.ts",
 		"test": "bun test",
 		"lint": "eslint .",
 		"format": "prettier --write .",

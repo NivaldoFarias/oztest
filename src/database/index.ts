@@ -52,7 +52,7 @@ export class Database {
 		try {
 			await mongoose.connect(this.mongoURI);
 
-			if (env.NODE_ENV === "development" && this.shouldSeed) {
+			if (this.shouldSeed) {
 				const seeder = new DatabaseSeeder(mongoose.connection);
 
 				if (env.SEED_CONFIG_PATH.length) {
