@@ -1,5 +1,3 @@
-import "reflect-metadata";
-
 import { Types } from "mongoose";
 import type { Ref } from "@typegoose/typegoose";
 

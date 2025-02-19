@@ -1,0 +1,5 @@
+preload = ["./src/config/reflect-metadata.ts"]
+[build]
+target = "node"
+minify = true
+sourcemap = "external"

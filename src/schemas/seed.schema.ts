@@ -16,8 +16,15 @@ export const seedOptionsSchema = z.object({
 	useRealGeocoding: z.boolean().default(false),
 });
 
-const { data } = seedOptionsSchema.safeParse({});
-
-export const defaultSeedOptions = data as SeedOptions;
+export const defaultSeedOptions = {
+	userCount: 10,
+	regionsPerUser: {
+		min: 2,
+		max: 4,
+	},
+	citiesCount: 50,
+	templatesCount: 20,
+	useRealGeocoding: false,
+};
 
 export type SeedOptions = z.infer<typeof seedOptionsSchema>;

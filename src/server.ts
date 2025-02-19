@@ -1,6 +1,7 @@
 import cors from "@fastify/cors";
 import sensible from "@fastify/sensible";
 import Fastify from "fastify";
+import { serializerCompiler, validatorCompiler } from "fastify-type-provider-zod";
 import { z } from "zod";
 
 import type { FastifyRequest } from "fastify";
@@ -46,6 +47,9 @@ class Server {
 	 * Sets up cross-origin resource sharing and adds helpful HTTP utility methods.
 	 */
 	private async setupPlugins() {
+		this.app.setValidatorCompiler(validatorCompiler);
+		this.app.setSerializerCompiler(serializerCompiler);
+
 		await this.app.register(cors, {
 			origin: env.CORS_ORIGIN,
 			methods: env.CORS_METHODS.split(","),
@@ -71,7 +75,7 @@ class Server {
 				schema: {
 					querystring: GetUsersQuerySchema,
 					response: {
-						200: z.object({
+						"2xx": z.object({
 							rows: z.array(
 								z.object({
 									_id: z.string(),

@@ -7,6 +7,7 @@ if (import.meta.main) {
 		entrypoints: ["./src/scripts/" + script + ".ts"],
 		target: "node",
 		minify: true,
+		sourcemap: "external",
 		banner: `
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
