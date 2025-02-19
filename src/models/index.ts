@@ -1,8 +1,8 @@
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 import type { Ref } from "@typegoose/typegoose";
 
 import { TimeStamps } from "@typegoose/typegoose/lib/defaultClasses";
-import { pre, getModelForClass, prop, modelOptions } from "@typegoose/typegoose";
+import { pre, getModelForClass, prop, modelOptions, Severity } from "@typegoose/typegoose";
 
 import { GeoLibSingleton } from "@/utils/";
 
@@ -48,17 +48,22 @@ export class User extends Base {
 	}
 
 	if (this.isNew) {
-		const user = await UserModel.findOne({ _id: this.user });
-		if (!user) {
-			throw new Error("User not found");
+		if (this.user instanceof mongoose.Types.ObjectId) {
+			const user = await UserModel.findOne({ _id: this.user });
+
+			if (!user) throw new Error("User not found");
+
+			user.regions.push(this._id);
+			await user.save({ session: this.$session() });
 		}
-		user.regions.push(this._id);
-		await user.save({ session: this.$session() });
 	}
 
 	next(this.validateSync());
 })
-@modelOptions({ schemaOptions: { validateBeforeSave: false } })
+@modelOptions({
+	schemaOptions: { validateBeforeSave: false },
+	options: { allowMixed: Severity.ALLOW },
+})
 export class Region extends Base {
 	@prop({ required: true })
 	public name!: string;

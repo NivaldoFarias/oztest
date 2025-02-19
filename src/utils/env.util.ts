@@ -32,9 +32,6 @@ const envSchema = z.object({
 	// Rate Limiting
 	RATE_LIMIT_MAX: z.coerce.number().positive().default(100),
 	RATE_LIMIT_WINDOW: z.coerce.number().positive().default(60_000),
-
-	// Seed Configuration
-	SEED_CONFIG_PATH: z.string().default(""),
 });
 
 /**

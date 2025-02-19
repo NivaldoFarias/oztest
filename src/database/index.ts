@@ -2,6 +2,8 @@ import fs from "fs/promises";
 
 import mongoose from "mongoose";
 
+import type { SeedOptions } from "@/schemas/seed.schema";
+
 import { DatabaseSeeder } from "@/database/seed";
 import { env } from "@/utils/env.util";
 
@@ -25,7 +27,7 @@ export class Database {
 	 */
 	constructor(
 		private readonly mongoURI: string,
-		private readonly shouldSeed = false,
+		private readonly seedOptions?: SeedOptions,
 	) {}
 
 	/**
@@ -41,7 +43,7 @@ export class Database {
 	 * @example
 	 * ```typescript
 	 * try {
-	 *   await db.init();
+	 *   await db.initialize();
 	 *   console.log('Connected to MongoDB');
 	 * } catch (error) {
 	 *   console.error('Failed to connect:', error);
@@ -50,20 +52,23 @@ export class Database {
 	 */
 	public async initialize() {
 		try {
-			await mongoose.connect(this.mongoURI);
+			await mongoose.connect(this.mongoURI, {
+				directConnection: true,
+				retryWrites: true,
+			});
 
-			if (this.shouldSeed) {
+			if (this.seedOptions) {
 				const seeder = new DatabaseSeeder(mongoose.connection);
 
-				if (env.SEED_CONFIG_PATH.length) {
-					const seedOptions = await fs.readFile(env.SEED_CONFIG_PATH, "utf8");
-					await seeder.seed(JSON.parse(seedOptions));
-				} else {
-					await seeder.seed();
-				}
+				await seeder.seed(this.seedOptions);
 			}
 		} catch (error) {
-			console.error("❌ MongoDB connection error:", error);
+			if (error instanceof Error) {
+				console.error("Database initialization failed:", error.message);
+			} else {
+				console.error("Database initialization failed with unknown error");
+			}
+
 			throw error;
 		}
 	}

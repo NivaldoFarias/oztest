@@ -50,12 +50,20 @@ export class GeoLib {
 			throw new Error(`API key is required for ${config.provider} provider`);
 		}
 
-		this.geocoder = NodeGeocoder({
-			provider: config.provider,
-			apiKey: config.apiKey,
-			language: config.language ?? "en",
-			region: config.region,
-		} as GeocoderOptions);
+		const options: GeocoderOptions = {
+			"provider": config.provider,
+			"apiKey": config.apiKey,
+			"language": config.language ?? "en",
+			"region": config.region,
+			"httpAdapter": "https",
+			"formatter": null,
+			"osmServer": "https://nominatim.openstreetmap.org",
+			"email": "your.email@example.com",
+			"user-agent": "YourApp/1.0",
+			"timeout": 5000,
+		};
+
+		this.geocoder = NodeGeocoder(options);
 	}
 
 	/**
