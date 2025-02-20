@@ -18,6 +18,7 @@
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
         "noPropertyAccessFromIndexSignature": false,
+        "resolveJsonModule": true,
         "paths": {
             "@/*": ["./src/*"]
         }

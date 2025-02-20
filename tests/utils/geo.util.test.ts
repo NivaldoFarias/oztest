@@ -1,0 +1,29 @@
+import Bun from "bun";
+import { beforeEach, describe, expect, it, mock } from "bun:test";
+
+import { GeoLib } from "@/utils/";
+
+import mockLocation from "../../mocks/location.mock.json" assert { type: "json" };
+import type { GeocodeResult } from "@googlemaps/google-maps-services-js";
+
+describe("GeoLib", () => {
+	const geoLib = new GeoLib();
+	const exactCoordinates = mockLocation as GeocodeResult;
+
+	it("should get address from coordinates", async () => {
+		const location = await geoLib.getLocationFromCoordinates(exactCoordinates.geometry.location);
+
+		await Bun.write("mocks/location.mock.json", JSON.stringify(location));
+
+		expect(location).toBeDefined();
+		expect(location.formatted_address).toBe(exactCoordinates.formatted_address);
+	});
+
+	it("should get coordinates from address", async () => {
+		const location = await geoLib.getLocationFromAddress(exactCoordinates.formatted_address);
+
+		expect(location).toBeDefined();
+		expect(location.geometry.location.lat).toBe(exactCoordinates.geometry.location.lat);
+		expect(location.geometry.location.lng).toBe(exactCoordinates.geometry.location.lng);
+	});
+});

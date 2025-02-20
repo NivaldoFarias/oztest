@@ -1,11 +1,6 @@
-import fs from "fs/promises";
-
 import mongoose from "mongoose";
 
-import type { SeedOptions } from "@/schemas/seed.schema";
-
-import { DatabaseSeeder } from "@/database/seed";
-import { env } from "@/utils/env.util";
+import type { Connection, ConnectOptions } from "mongoose";
 
 /**
  * Manages MongoDB database connections and lifecycle operations.
@@ -14,6 +9,9 @@ import { env } from "@/utils/env.util";
  * using Mongoose as the ODM (Object Document Mapper).
  */
 export class Database {
+	private readonly mongoURI: string;
+	private connection: Connection | null = null;
+
 	/**
 	 * Creates a new Database instance with the specified MongoDB connection URI.
 	 *
@@ -25,10 +23,25 @@ export class Database {
 	 * await db.init();
 	 * ```
 	 */
-	constructor(
-		private readonly mongoURI: string,
-		private readonly seedOptions?: SeedOptions,
-	) {}
+	constructor(baseUri: string) {
+		this.mongoURI = this.buildConnectionUri(baseUri);
+	}
+
+	/**
+	 * Constructs a MongoDB connection URI with proper options for primary node connection
+	 *
+	 * @param baseUri - Base MongoDB connection string
+	 */
+	private buildConnectionUri(baseUri: string) {
+		const params = new URLSearchParams({
+			directConnection: "true",
+			retryWrites: "true",
+			w: "majority",
+			readPreference: "primary",
+		});
+
+		return `${baseUri}?${params}`;
+	}
 
 	/**
 	 * Initializes the database connection using the provided MongoDB URI.
@@ -50,18 +63,13 @@ export class Database {
 	 * }
 	 * ```
 	 */
-	public async initialize() {
+	public async initialize(connectionOptions: ConnectOptions = {}) {
 		try {
-			await mongoose.connect(this.mongoURI, {
-				directConnection: true,
-				retryWrites: true,
-			});
+			const { connection } = await mongoose.connect(this.mongoURI, connectionOptions);
 
-			if (this.seedOptions) {
-				const seeder = new DatabaseSeeder(mongoose.connection);
+			this.connection = connection;
 
-				await seeder.seed(this.seedOptions);
-			}
+			return connection;
 		} catch (error) {
 			if (error instanceof Error) {
 				console.error("Database initialization failed:", error.message);
@@ -84,7 +92,43 @@ export class Database {
 	 * ```
 	 */
 	public async close() {
-		await mongoose.connection.close();
+		if (!this.connection) {
+			throw new Error("Database connection not established");
+		}
+
+		await this.connection.close();
 		console.log("📦 Disconnected from MongoDB");
+	}
+
+	/**
+	 * Verifies connection is to primary node and database is writable
+	 *
+	 * @throws {Error} If not connected to primary or database is not writable
+	 */
+	private async verifyPrimaryConnection() {
+		if (!this.connection) {
+			throw new Error("Database connection not established");
+		}
+
+		const adminDb = this.connection.db.admin();
+
+		const { ismaster, primary, hosts } = await adminDb.command({ isMaster: 1 });
+
+		if (!ismaster) {
+			throw new Error(
+				`Not connected to primary node. Current primary: ${primary}. Available hosts: ${hosts.join(", ")}`,
+			);
+		}
+
+		// Test write capability
+		try {
+			await this.connection.db.command({ ping: 1, writeConcern: { w: "majority" } });
+		} catch (error) {
+			if (error instanceof Error) {
+				throw new Error(`Database is not writable: ${error.message}`);
+			} else {
+				throw new Error("Database is not writable with unknown error");
+			}
+		}
 	}
 }

@@ -1,0 +1,40 @@
+{
+    "address_components": [
+        { "long_name": "CWF7+3X", "short_name": "CWF7+3X", "types": ["plus_code"] },
+        {
+            "long_name": "Mountain View",
+            "short_name": "Mountain View",
+            "types": ["locality", "political"]
+        },
+        {
+            "long_name": "Santa Clara County",
+            "short_name": "Santa Clara County",
+            "types": ["administrative_area_level_2", "political"]
+        },
+        {
+            "long_name": "California",
+            "short_name": "CA",
+            "types": ["administrative_area_level_1", "political"]
+        },
+        { "long_name": "United States", "short_name": "US", "types": ["country", "political"] }
+    ],
+    "formatted_address": "CWF7+3X Mountain View, CA, USA",
+    "geometry": {
+        "bounds": {
+            "northeast": { "lat": 37.42275, "lng": -122.085 },
+            "southwest": { "lat": 37.422625, "lng": -122.085125 }
+        },
+        "location": { "lat": 37.42274, "lng": -122.085091 },
+        "location_type": "GEOMETRIC_CENTER",
+        "viewport": {
+            "northeast": { "lat": 37.42403648029151, "lng": -122.0837135197085 },
+            "southwest": { "lat": 37.42133851970851, "lng": -122.0864114802915 }
+        }
+    },
+    "place_id": "GhIJA1slWBy2QkARxYuFIXKFXsA",
+    "plus_code": {
+        "compound_code": "CWF7+3X Mountain View, CA, USA",
+        "global_code": "849VCWF7+3X"
+    },
+    "types": ["plus_code"]
+}

@@ -1,22 +1,56 @@
+import type { ConnectOptions } from "mongoose";
+
 import { Database } from "@/database/";
+import { DatabaseSeeder } from "@/database/seed";
 import { env } from "@/utils/";
 
 if (import.meta.main) {
-	const database = new Database(env.MONGO_URI, {
+	const seedOptions = {
 		userCount: 10,
 		regionsPerUser: { min: 1, max: 3 },
 		citiesCount: 100,
 		templatesCount: 30,
 		useRealGeocoding: false,
-	});
+	};
+	// const connectionOptions: ConnectOptions = {
+	// 	directConnection: true,
+	// 	retryWrites: false,
+	// 	writeConcern: {
+	// 		w: 1,
+	// 		wtimeout: 2500,
+	// 	},
+	// 	readPreference: "primary",
+	// 	readConcern: { level: "local" },
+	// 	serverSelectionTimeoutMS: 5000,
+	// 	connectTimeoutMS: 10_000,
+	// 	socketTimeoutMS: 45_000,
+	// };
+
+	const database = new Database(env.MONGO_URI);
+	let seeder: DatabaseSeeder;
 
 	try {
-		await database.initialize();
+		console.log("Establishing connection to primary node...");
+		const connection = await database.initialize();
+
+		console.log("Verifying primary node status...");
+		seeder = await DatabaseSeeder.create(connection);
+
+		console.log("✅ Connected to primary node, starting seed...");
+		await seeder.seed(seedOptions);
+
 		console.log("✨ Database seeded successfully!");
 
 		process.on("SIGINT", () => void shutdown());
 		process.on("SIGTERM", () => void shutdown());
 	} catch (error) {
+		if (error instanceof Error) {
+			console.error("❌ Database connection/seeding failed:", error.message);
+		} else {
+			console.error("❌ Database connection/seeding failed with unknown error");
+		}
+
+		await database.close();
 		process.exit(1);
 	}
 

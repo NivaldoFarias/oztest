@@ -1,4 +1,5 @@
 import { faker } from "@faker-js/faker";
+import { ConnectionStates } from "mongoose";
 
 import type { ClientSession, Connection } from "mongoose";
 
@@ -12,6 +13,23 @@ declare interface City {
 	name: string;
 	coordinates: [number, number];
 	address: string;
+}
+
+declare interface SeedContext {
+	cities: Array<City>;
+	regionTemplates: string[];
+	session: ClientSession;
+}
+
+declare interface BatchUser {
+	name: string;
+	email: string;
+	address: string;
+	coordinates: [number, number];
+	meta: {
+		firstName: string;
+		lastName: string;
+	};
 }
 
 /**
@@ -42,17 +60,18 @@ const generateCities = async (count: number, useRealGeocoding: boolean) => {
 
 		if (useRealGeocoding) {
 			try {
-				const locationDetails = await GeoLibSingleton.getLocationDetails(address);
+				const locationDetails = await GeoLibSingleton.getLocationFromAddress(address);
 				const coordinates: [number, number] = [
-					Number(locationDetails.longitude),
-					Number(locationDetails.latitude),
+					Number(locationDetails.geometry.location.lng),
+					Number(locationDetails.geometry.location.lat),
 				];
 
 				result.push({
 					name: city,
 					coordinates,
-					address: locationDetails.formattedAddress ?? address,
+					address: locationDetails.formatted_address,
 				});
+
 				continue;
 			} catch (error) {
 				console.warn(`Failed to geocode ${address}, falling back to mock data`);
@@ -81,44 +100,44 @@ const generateCities = async (count: number, useRealGeocoding: boolean) => {
  * @returns Array of district name templates
  */
 const generateRegionTemplates = (count: number) => {
-	const prefixes = [
-		"Downtown",
-		"Central",
-		"North",
-		"South",
-		"East",
-		"West",
-		"Modern",
-		"Historic",
-		"Urban",
-		"Metropolitan",
-	];
-
-	const suffixes = [
-		"District",
-		"Quarter",
-		"Hub",
-		"Zone",
-		"Park",
-		"Center",
-		"Area",
-		"Complex",
-		"Corridor",
-		"Square",
-	];
-
-	const specialties = [
-		"Business",
-		"Tech",
-		"Cultural",
-		"Innovation",
-		"Financial",
-		"Commercial",
-		"Industrial",
-		"Residential",
-		"Entertainment",
-		"Research",
-	];
+	const data = {
+		prefixes: [
+			"Downtown",
+			"Central",
+			"North",
+			"South",
+			"East",
+			"West",
+			"Modern",
+			"Historic",
+			"Urban",
+			"Metropolitan",
+		],
+		suffixes: [
+			"District",
+			"Quarter",
+			"Hub",
+			"Zone",
+			"Park",
+			"Center",
+			"Area",
+			"Complex",
+			"Corridor",
+			"Square",
+		],
+		specialties: [
+			"Business",
+			"Tech",
+			"Cultural",
+			"Innovation",
+			"Financial",
+			"Commercial",
+			"Industrial",
+			"Residential",
+			"Entertainment",
+			"Research",
+		],
+	};
 
 	const templates = new Set<string>();
 
@@ -126,8 +145,10 @@ const generateRegionTemplates = (count: number) => {
 		const useSpecialty = Math.random() > 0.5;
 		const template =
 			useSpecialty ?
-				`${faker.helpers.arrayElement(specialties)} ${faker.helpers.arrayElement(suffixes)}`
-			:	`${faker.helpers.arrayElement(prefixes)} ${faker.helpers.arrayElement(suffixes)}`;
+				`${faker.helpers.arrayElement(data.specialties)} ${faker.helpers.arrayElement(
+					data.suffixes,
+				)}`
+			:	`${faker.helpers.arrayElement(data.prefixes)} ${faker.helpers.arrayElement(data.suffixes)}`;
 
 		templates.add(template);
 	}
@@ -167,44 +188,171 @@ export class DatabaseSeeder {
 	}
 
 	/**
+	 * Creates a new DatabaseSeeder instance with retry logic for primary connection.
+	 *
+	 * @param connection - MongoDB connection instance
+	 * @param maxRetries - Maximum number of retries to find primary
+	 * @param retryDelay - Delay between retries in milliseconds
+	 * @throws {Error} If unable to connect to primary after retries
+	 */
+	public static async create(connection: Connection, maxRetries = 5, retryDelay = 2_000) {
+		let attempts = 0;
+
+		while (attempts < maxRetries) {
+			try {
+				// Wait for connection to be ready
+				if (connection.readyState !== 1) {
+					await new Promise<void>((resolve) => {
+						connection.once("connected", () => {
+							resolve();
+						});
+					});
+				}
+
+				// Verify we can write to the database
+				const adminDb = connection.db.admin();
+				const status = await adminDb.serverStatus();
+
+				if (!status.writablePrimary) {
+					throw new Error("Not connected to primary node");
+				}
+
+				await adminDb.ping();
+				return new DatabaseSeeder(connection);
+			} catch (error) {
+				attempts++;
+				if (attempts === maxRetries) {
+					console.error("Failed to connect to primary:", error);
+					throw new Error("Could not establish writable connection to MongoDB primary");
+				}
+				console.warn(`Attempt ${attempts}/${maxRetries} failed, retrying in ${retryDelay}ms...`);
+				await new Promise((resolve) => setTimeout(resolve, retryDelay));
+			}
+		}
+
+		throw new Error("Failed to create DatabaseSeeder");
+	}
+
+	/**
+	 * Seeds users and their associated regions in batches.
+	 *
+	 * ## Workflow
+	 * 1. Processes users in batches of 50
+	 * 2. For each batch:
+	 *    - Creates all users
+	 *    - Creates regions for each user
+	 *
+	 * @param options Seeding configuration options
+	 * @param context Context containing cities and region templates
+	 * @throws {Error} If batch creation fails
+	 */
+	private async seedUsers(
+		options: SeedOptions,
+		{ cities, regionTemplates }: Omit<SeedContext, "session">,
+	) {
+		const BATCH_SIZE = 50;
+		const totalBatches = Math.ceil(options.userCount / BATCH_SIZE);
+
+		for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+			const batchStart = batchIndex * BATCH_SIZE;
+			const batchEnd = Math.min((batchIndex + 1) * BATCH_SIZE, options.userCount);
+			const batchUsers: Array<BatchUser> = [];
+
+			console.log(`\nProcessing batch ${batchIndex + 1}/${totalBatches}`);
+
+			// Prepare batch data
+			for (let i = batchStart; i < batchEnd; i++) {
+				const firstName = faker.person.firstName();
+				const lastName = faker.person.lastName();
+				const city = cities[i % cities.length];
+				const fullAddress = `${faker.location.streetAddress()}, ${city.address}`;
+
+				batchUsers.push({
+					name: `${firstName} ${lastName}`,
+					email: faker.internet.email({ firstName, lastName }),
+					address: fullAddress,
+					coordinates:
+						options.useRealGeocoding ?
+							await this.getGeocodedCoordinates(fullAddress, city.coordinates)
+						:	city.coordinates,
+					meta: { firstName, lastName },
+				});
+			}
+
+			// Process batch
+			for (const userData of batchUsers) {
+				const { meta, ...userDoc } = userData;
+				console.log(`Creating user: ${meta.firstName} ${meta.lastName}`);
+
+				const [user] = await UserModel.create([userDoc]);
+				await this.createRegionsForUser(user, { options, regionTemplates });
+			}
+		}
+	}
+
+	/**
+	 * Gets coordinates for an address using geocoding service with fallback.
+	 */
+	private async getGeocodedCoordinates(address: string, fallbackCoordinates: [number, number]) {
+		try {
+			const locationDetails = await GeoLibSingleton.getLocationFromAddress(address);
+			return [
+				Number(locationDetails.geometry.location.lng),
+				Number(locationDetails.geometry.location.lat),
+			] as [number, number];
+		} catch (error) {
+			console.warn(`Failed to geocode ${address}, using city coordinates`);
+			return fallbackCoordinates;
+		}
+	}
+
+	/**
+	 * Creates regions for a specific user.
+	 */
+	private async createRegionsForUser(
+		user: InstanceType<typeof UserModel>,
+		{
+			options,
+			regionTemplates,
+		}: {
+			options: SeedOptions;
+			regionTemplates: Array<string>;
+		},
+	) {
+		const numRegions =
+			options.regionsPerUser.min +
+			Math.floor(Math.random() * (options.regionsPerUser.max - options.regionsPerUser.min + 1));
+
+		const regions = Array.from({ length: numRegions }, () => ({
+			name: `${faker.location.county()} ${
+				regionTemplates[Math.floor(Math.random() * regionTemplates.length)]
+			}`,
+			user: user._id,
+			geometry: {
+				type: "Polygon" as const,
+				coordinates: this.generatePolygonCoordinates(user.coordinates),
+			},
+		}));
+
+		await RegionModel.create(regions);
+	}
+
+	/**
 	 * Seeds the database with test data.
 	 *
 	 * ## Workflow
 	 * 1. Validate options
 	 * 2. Generate cities and region templates
-	 * 3. Start session
-	 * 4. With transaction:
-	 *    - Create users
-	 *    - Create regions for each user
-	 * 5. Commit transaction
-	 * 6. End session
+	 * 3. Create users and their regions in batches
 	 *
 	 * @param options - Options for controlling the seeding process
-	 * @throws {Error} If options are invalid
-	 *
-	 * @example
-	 * ```typescript
-	 * const seeder = new DatabaseSeeder(connection);
-	 *
-	 * // Seed with mock location data
-	 * await seeder.seed();
-	 *
-	 * // Seed with real geocoding
-	 * await seeder.seed({
-	 *   userCount: 5,
-	 *   regionsPerUser: { min: 1, max: 3 },
-	 *   citiesCount: 100,
-	 *   templatesCount: 30,
-	 *   useRealGeocoding: true
-	 * });
-	 * ```
+	 * @throws {Error} If seeding fails
 	 */
 	public async seed(options?: Partial<SeedOptions>) {
 		let validatedOptions = defaultSeedOptions;
 
 		if (options) {
 			const { success, data, error } = seedOptionsSchema.safeParse(options);
-
 			if (success) validatedOptions = data;
 			else console.error("Invalid seed options, using defaults.", error.message);
 		}
@@ -215,97 +363,18 @@ export class DatabaseSeeder {
 		);
 		const regionTemplates = generateRegionTemplates(validatedOptions.templatesCount);
 
-		const session = await this.connection.startSession();
-
 		try {
 			console.log(
 				`Starting database seeding (${validatedOptions.userCount} users,` +
 					` ${validatedOptions.regionsPerUser.min}-${validatedOptions.regionsPerUser.max} regions per user)...`,
 			);
 
-			await session.withTransaction(
-				this.seedUsers.bind(this, validatedOptions, {
-					cities,
-					regionTemplates,
-					session,
-				}),
-			);
+			await this.seedUsers(validatedOptions, { cities, regionTemplates });
 
 			console.log("Database seeding completed successfully!");
 		} catch (error) {
 			console.error("Error seeding database:", error);
 			throw error;
-		} finally {
-			await session.endSession();
-		}
-	}
-
-	private async seedUsers(
-		options: SeedOptions,
-		{
-			cities,
-			regionTemplates,
-			session,
-		}: { cities: Array<City>; regionTemplates: string[]; session: ClientSession },
-	) {
-		for (let i = 0; i < options.userCount; i++) {
-			const firstName = faker.person.firstName();
-			const lastName = faker.person.lastName();
-			const city = cities[i % cities.length];
-
-			console.log(`Creating user ${i + 1}/${options.userCount}: ${firstName} ${lastName}`);
-
-			const streetAddress = faker.location.streetAddress();
-			const fullAddress = `${streetAddress}, ${city.address}`;
-
-			let userCoordinates: [number, number];
-			if (options.useRealGeocoding) {
-				try {
-					const locationDetails = await GeoLibSingleton.getLocationDetails(fullAddress);
-					userCoordinates = [Number(locationDetails.longitude), Number(locationDetails.latitude)];
-				} catch (error) {
-					console.warn(`Failed to geocode ${fullAddress}, using city coordinates`);
-					userCoordinates = city.coordinates;
-				}
-			} else {
-				userCoordinates = city.coordinates;
-			}
-
-			const user = await UserModel.create(
-				[
-					{
-						name: `${firstName} ${lastName}`,
-						email: faker.internet.email({ firstName, lastName }),
-						address: fullAddress,
-						coordinates: userCoordinates,
-					},
-				],
-				{ session },
-			);
-
-			console.log(`Creating regions for ${firstName} ${lastName}`);
-
-			const regions = [];
-			const numRegions =
-				options.regionsPerUser.min +
-				Math.floor(Math.random() * (options.regionsPerUser.max - options.regionsPerUser.min + 1));
-
-			for (let j = 0; j < numRegions; j++) {
-				const name = `${faker.location.county()} ${
-					regionTemplates[Math.floor(Math.random() * regionTemplates.length)]
-				}`;
-
-				regions.push({
-					name,
-					user: user[0]._id,
-					geometry: {
-						type: "Polygon" as const,
-						coordinates: this.generatePolygonCoordinates(userCoordinates),
-					},
-				});
-			}
-
-			await RegionModel.create(regions, { session });
 		}
 	}
 }

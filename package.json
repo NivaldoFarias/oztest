@@ -12,6 +12,7 @@
 		"test": "bun test",
 		"lint": "eslint .",
 		"format": "prettier --write .",
+		"server": "bun src/scripts/server.ts",
 		"seed": "bun src/scripts/seed.ts"
 	},
 	"engines": {
@@ -20,12 +21,13 @@
 	"dependencies": {
 		"@fastify/cors": "^10.0.2",
 		"@fastify/sensible": "^6.0.3",
+		"@googlemaps/google-maps-services-js": "^3.4.0",
 		"@typegoose/typegoose": "11.5.0",
 		"fastify": "^5.2.1",
 		"fastify-type-provider-zod": "^4.0.2",
 		"mongoose": "7.5.3",
-		"node-geocoder": "^4.4.1",
 		"reflect-metadata": "0.1.13",
+		"ts-pattern": "^5.6.2",
 		"zod": "^3.24.2"
 	},
 	"devDependencies": {

@@ -1,69 +1,41 @@
-import NodeGeocoder from "node-geocoder";
+import { Client, Language, Status } from "@googlemaps/google-maps-services-js";
+import { match, P } from "ts-pattern";
 
-import type { Options as GeocoderOptions } from "node-geocoder";
+import type {
+	ClientOptions,
+	GeocodeRequest,
+	GeocodeResult,
+	LatLng,
+	LatLngLiteralVerbose,
+	ReverseGeocodeRequest,
+} from "@googlemaps/google-maps-services-js";
 
 import { env } from "./env.util";
 
 /**
- * Represents a set of geographical coordinates with latitude and longitude values.
- * Used throughout the application for location-based operations.
- */
-export interface Coordinates {
-	latitude: number;
-	longitude: number;
-}
-
-/**
- * Represents the configuration options for the geocoding service.
- * Provides a subset of NodeGeocoder options that are relevant for our use case.
- */
-export interface GeocodingConfig {
-	provider: GeocoderOptions["provider"];
-	apiKey?: string;
-	language?: string;
-	region?: string;
-}
-
-/**
- * Utility class for handling geolocation operations and coordinate transformations.
- * Provides methods for converting between coordinates and human-readable addresses.
+ * Utility class for Google Maps geolocation services
  */
 export class GeoLib {
-	private readonly geocoder: NodeGeocoder.Geocoder;
+	private readonly baseConfig: GeocodeRequest = {
+		params: {
+			key: env.GEOCODING_API_KEY,
+			language: Language.en,
+		},
+	};
+	private readonly client: Client;
 
 	/**
 	 * Creates a new instance of the GeoLib class with the specified configuration.
 	 *
-	 * @param config The configuration options for the geocoding service
-	 * @throws {Error} If the provider is not supported or if required API key is missing
+	 * @param clientOptions The configuration options for the geocoding service
 	 *
 	 * @example
 	 * ```typescript
-	 * const geoLib = new GeoLib({
-	 *   provider: 'google',
-	 *   apiKey: 'your-api-key'
-	 * });
+	 * const geoLib = new GeoLib();
 	 * ```
 	 */
-	constructor(config: GeocodingConfig) {
-		if (config.provider !== "openstreetmap" && !config.apiKey) {
-			throw new Error(`API key is required for ${config.provider} provider`);
-		}
-
-		const options: GeocoderOptions = {
-			"provider": config.provider,
-			"apiKey": config.apiKey,
-			"language": config.language ?? "en",
-			"region": config.region,
-			"httpAdapter": "https",
-			"formatter": null,
-			"osmServer": "https://nominatim.openstreetmap.org",
-			"email": "your.email@example.com",
-			"user-agent": "YourApp/1.0",
-			"timeout": 5000,
-		};
-
-		this.geocoder = NodeGeocoder(options);
+	constructor(clientOptions?: ClientOptions) {
+		this.client = new Client(clientOptions);
 	}
 
 	/**
@@ -90,19 +62,16 @@ export class GeoLib {
 	 * const address2 = await geoLib.getAddressFromCoordinates({ lat: 37.42274, lng: -122.085091 });
 	 * ```
 	 */
-	public async getAddressFromCoordinates(coordinates: [number, number] | Coordinates) {
-		const [lat, lon] =
-			Array.isArray(coordinates) ?
-				[coordinates[1], coordinates[0]]
-			:	[coordinates.latitude, coordinates.longitude];
+	public async getLocationFromCoordinates(coordinates: LatLng) {
+		const response = await this.client.reverseGeocode(
+			this.composeRequestOptions({ latlng: coordinates } as ReverseGeocodeRequest["params"]),
+		);
 
-		const results = await this.geocoder.reverse({ lat, lon });
-
-		if (!results.length || !results[0].formattedAddress) {
-			throw new Error("No address found for the provided coordinates");
+		if (response.data.status !== Status.OK || !response.data.results.length) {
+			throw new Error(`Geocoding failed: ${response.data.status}`);
 		}
 
-		return results[0].formattedAddress;
+		return this.findNearestLocationMatch(response.data.results, coordinates);
 	}
 
 	/**
@@ -124,52 +93,144 @@ export class GeoLib {
 	 * console.log(coords); // { lat: 37.42274, lng: -122.085091 }
 	 * ```
 	 */
-	public async getCoordinatesFromAddress(address: string) {
-		const results = await this.geocoder.geocode(address);
+	public async getLocationFromAddress(address: string) {
+		const response = await this.client.geocode(
+			this.composeRequestOptions({ address } as GeocodeRequest["params"]),
+		);
 
-		if (!results.length || !results[0].latitude || !results[0].longitude) {
-			throw new Error("No coordinates found for the provided address");
+		if (response.data.status !== Status.OK || !response.data.results.length) {
+			throw new Error(`Geocoding failed: ${response.data.status}`);
 		}
 
+		return this.findNearestLocationMatch(response.data.results, address);
+	}
+
+	/**
+	 * Composes options for geocoding requests.
+	 *
+	 * @param params The parameters for the geocoding request
+	 * @returns The composed options
+	 */
+	private composeRequestOptions<T extends GeocodeRequest | ReverseGeocodeRequest>(
+		params: T["params"],
+	): T {
+		const baseConfig = this.baseConfig as T;
+
 		return {
-			latitude: results[0].latitude,
-			longitude: results[0].longitude,
+			...baseConfig,
+			params: {
+				...baseConfig.params,
+				...params,
+			},
 		};
 	}
 
 	/**
-	 * Retrieves detailed location information for a given address or coordinates.
+	 * Finds the nearest location match from a list of geocoding results.
 	 *
-	 * ## Workflow
-	 * 1. Accepts either an address string or coordinates
-	 * 2. Performs geocoding using the appropriate method
-	 * 3. Returns comprehensive location details including administrative areas
+	 * @param results An array of geocoding results
+	 * @param toMatch The location to match against, either a string address or a LatLng object
 	 *
-	 * @param query The location query - either an address string or coordinates
-	 * @throws {Error} If geocoding fails or no results are found
+	 * @throws {Error} If no match is found
 	 *
-	 * @returns A promise that resolves to detailed location information
-	 *
-	 * @example
-	 * ```typescript
-	 * // Using address
-	 * const details1 = await geoLib.getLocationDetails('1600 Amphitheatre Parkway, Mountain View, CA');
-	 *
-	 * // Using coordinates
-	 * const details2 = await geoLib.getLocationDetails({ lat: 37.42274, lng: -122.085091 });
-	 * ```
+	 * @returns The nearest location match
 	 */
-	public async getLocationDetails(query: string | Coordinates) {
-		const results =
-			typeof query === "string" ?
-				await this.geocoder.geocode(query)
-			:	await this.geocoder.reverse({ lat: query.latitude, lon: query.longitude });
+	private findNearestLocationMatch(results: GeocodeResult[], toMatch: LatLng) {
+		if (typeof toMatch === "string") {
+			const match = results.find(({ formatted_address }) => formatted_address === toMatch);
 
-		if (!results[0]) {
-			throw new Error("No location details found for the provided query");
+			if (!match) throw new Error("No match found");
+
+			return match;
 		}
 
-		return results[0];
+		let match = results.find(({ geometry }) => {
+			const currentLatLng = this.coerceCoordinates(geometry.location);
+			const toMatchLatLng = this.coerceCoordinates(toMatch);
+
+			return (
+				currentLatLng.latitude === toMatchLatLng.latitude &&
+				currentLatLng.longitude === toMatchLatLng.longitude
+			);
+		});
+
+		if (!match) {
+			const rankedResults = results.toSorted((current, next) => {
+				const currentLatLng = this.coerceCoordinates(current.geometry.location);
+				const nextLatLng = this.coerceCoordinates(next.geometry.location);
+				const toMatchLatLng = this.coerceCoordinates(toMatch);
+
+				const currentDistance =
+					Math.abs(currentLatLng.latitude - toMatchLatLng.latitude) +
+					Math.abs(currentLatLng.longitude - toMatchLatLng.longitude);
+				const nextDistance =
+					Math.abs(nextLatLng.latitude - toMatchLatLng.latitude) +
+					Math.abs(nextLatLng.longitude - toMatchLatLng.longitude);
+
+				return currentDistance - nextDistance;
+			});
+
+			match = rankedResults.at(-1);
+
+			if (!match) throw new Error("No match found");
+		}
+
+		return match;
+	}
+
+	/**
+	 * Coerces different coordinate formats into a standardized LatLngLiteralVerbose object.
+	 *
+	 * ## Workflow
+	 * 1. Uses pattern matching to identify and validate input format
+	 * 2. Transforms the input into a standardized format
+	 * 3. Throws if no pattern matches or coordinates are invalid
+	 *
+	 * @param coordinates The coordinates in various formats (string, array, or object)
+	 * @throws {Error} If coordinates are invalid or in an unsupported format
+	 *
+	 * @returns The coerced coordinates
+	 * @example
+	 * ```typescript
+	 * // String format
+	 * const coords1 = coerceCoordinates("37.7749,-122.4194");
+	 *
+	 * // Array format
+	 * const coords2 = coerceCoordinates([37.7749, -122.4194]);
+	 *
+	 * // Object format with lat/lng
+	 * const coords3 = coerceCoordinates({ lat: 37.7749, lng: -122.4194 });
+	 *
+	 * // Object format with latitude/longitude
+	 * const coords4 = coerceCoordinates({ latitude: 37.7749, longitude: -122.4194 });
+	 * ```
+	 */
+	private coerceCoordinates(coordinates: LatLng): LatLngLiteralVerbose {
+		return match(coordinates)
+			.with(P.string, (coords) => {
+				const [latitude, longitude] = coords.split(",").map(Number);
+
+				if (Number.isNaN(latitude) || Number.isNaN(longitude)) {
+					throw new Error("Invalid string coordinates format");
+				}
+
+				return { latitude, longitude };
+			})
+			.with(P.array(P.number), ([latitude, longitude]) => {
+				if (Number.isNaN(latitude) || Number.isNaN(longitude)) {
+					throw new Error("Invalid array coordinates format");
+				}
+
+				return { latitude, longitude };
+			})
+			.with({ lat: P.number, lng: P.number }, ({ lat, lng }) => ({
+				latitude: lat,
+				longitude: lng,
+			}))
+			.with({ latitude: P.number, longitude: P.number }, (coords) => coords)
+			.otherwise(() => {
+				throw new Error("Invalid coordinates");
+			});
 	}
 }
 
@@ -177,9 +238,4 @@ export class GeoLib {
  * Creates and exports a singleton instance of the GeoLib class using OpenStreetMap as the default provider.
  * This ensures all geolocation operations use the same instance and configuration.
  */
-export const GeoLibSingleton = new GeoLib({
-	provider: "openstreetmap",
-	apiKey: env.GEOCODING_API_KEY,
-	language: "en",
-	region: "US",
-});
+export const GeoLibSingleton = new GeoLib();
