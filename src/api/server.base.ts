@@ -2,8 +2,8 @@ import Fastify from "fastify";
 
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 
-import { Database } from "@/database";
-import { env } from "@/utils";
+import { Database } from "@/database/";
+import { env } from "@/utils/";
 
 /**
  * Abstract base server class providing core HTTP server functionality.
@@ -11,7 +11,7 @@ import { env } from "@/utils";
  */
 export abstract class ServerBase {
 	/** Database instance for MongoDB connection management */
-	protected readonly database = new Database(env.MONGO_BASE_URI);
+	protected readonly database: Database;
 
 	/** Fastify instance configured with Zod for runtime type checking */
 	protected readonly app = Fastify({
@@ -21,8 +21,11 @@ export abstract class ServerBase {
 	/**
 	 * Initializes server components and sets up required configurations.
 	 * Calls abstract methods that must be implemented by derived classes.
+	 *
+	 * @param baseUri The base URI for the database connection
 	 */
-	constructor() {
+	constructor(baseUri = env.MONGO_BASE_URI) {
+		this.database = new Database(baseUri);
 		void this.setupPlugins();
 		this.setupRoutes();
 	}

@@ -4,8 +4,8 @@ import mongoose from "mongoose";
 
 import "@/database";
 
+import server from "@/api/server";
 import { UserModel } from "@/models";
-import server from "@/server";
 import { GeoLib } from "@/utils/geo.util";
 
 /**

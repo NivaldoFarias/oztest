@@ -13,7 +13,7 @@ import { STATUS } from "@/utils";
  * @example
  * ```typescript
  * const users = await getUsers(request);
- * // => { rows: Array<User>, page: number, limit: number, total: number }
+ * console.log(users); // => { rows: Array<User>, page: number, limit: number, total: number }
  * ```
  */
 export async function getUsers(request: FastifyRequest<{ Querystring: GetUsersQuery }>) {
@@ -41,7 +41,7 @@ export async function getUsers(request: FastifyRequest<{ Querystring: GetUsersQu
  * @example
  * ```typescript
  * const user = await getUserById(request, app);
- * // => User object or throws NotFoundError
+ * console.log(user); // => User object or throws NotFoundError
  * ```
  */
 export async function getUserById(
@@ -69,7 +69,7 @@ export async function getUserById(
  * @example
  * ```typescript
  * const result = await updateUser(request, app);
- * // => { status: 201 }
+ * console.log(result); // => { status: 201 }
  * ```
  */
 export async function updateUser(

@@ -6,7 +6,7 @@ import type { GetUsersQuery, UpdateUserBody, UserParams } from "@/schemas";
 
 import { GetUsersQuerySchema, UpdateUserBodySchema, UserParamsSchema } from "@/schemas";
 
-import { getUserById, getUsers, updateUser } from "./handlers";
+import { getUserById, getUsers, updateUser } from "./handlers.adapter";
 
 /**
  * Configures API routes for the Fastify server instance.

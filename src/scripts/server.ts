@@ -1,4 +1,4 @@
-import server from "@/server";
+import server from "@/api/server";
 
 if (import.meta.main) {
 	try {
