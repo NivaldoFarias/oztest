@@ -20,7 +20,8 @@
         "noPropertyAccessFromIndexSignature": false,
         "resolveJsonModule": true,
         "paths": {
-            "@/*": ["./src/*"]
+            "@/*": ["./src/*"],
+            "@tests/*": ["./tests/*"]
         }
     },
     "include": ["**/*.ts", "**/*.mjs", "**/*.cjs", "**/*.js"],

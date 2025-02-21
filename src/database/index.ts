@@ -15,7 +15,7 @@ export class Database {
 	/**
 	 * Creates a new Database instance with the specified MongoDB connection URI.
 	 *
-	 * @param mongoURI The MongoDB connection string including protocol, credentials, host, and database name
+	 * @param baseUri The MongoDB connection string including protocol, credentials, host, and database name
 	 *
 	 * @example
 	 * ```typescript

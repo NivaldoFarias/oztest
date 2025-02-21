@@ -1,5 +1,3 @@
-import type { ConnectOptions } from "mongoose";
-
 import { Database } from "@/database/";
 import { DatabaseSeeder } from "@/database/seed";
 import { env } from "@/utils/";
@@ -12,21 +10,8 @@ if (import.meta.main) {
 		templatesCount: 30,
 		useRealGeocoding: false,
 	};
-	// const connectionOptions: ConnectOptions = {
-	// 	directConnection: true,
-	// 	retryWrites: false,
-	// 	writeConcern: {
-	// 		w: 1,
-	// 		wtimeout: 2500,
-	// 	},
-	// 	readPreference: "primary",
-	// 	readConcern: { level: "local" },
-	// 	serverSelectionTimeoutMS: 5000,
-	// 	connectTimeoutMS: 10_000,
-	// 	socketTimeoutMS: 45_000,
-	// };
 
-	const database = new Database(env.MONGO_URI);
+	const database = new Database(env.MONGO_BASE_URI);
 	let seeder: DatabaseSeeder;
 
 	try {

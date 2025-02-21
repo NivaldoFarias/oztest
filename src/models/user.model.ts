@@ -9,12 +9,15 @@ import type { Region } from "@/models/region.model";
 /** User model representing application users with location data */
 @pre<User>("save", async function (next) {
 	if (this.isModified("coordinates")) {
-		this.address = await GeoLibSingleton.getLocationFromCoordinates(this.coordinates);
-	} else if (this.isModified("address")) {
-		const { latitude: lat, longitude: lng } = await GeoLibSingleton.getLocationFromAddress(
-			this.address,
+		const { formatted_address } = await GeoLibSingleton.getLocationFromCoordinates(
+			this.coordinates,
 		);
-		this.coordinates = [lng, lat];
+
+		this.address = formatted_address;
+	} else if (this.isModified("address")) {
+		const { geometry } = await GeoLibSingleton.getLocationFromAddress(this.address);
+
+		this.coordinates = [geometry.location.lng, geometry.location.lat];
 	}
 
 	next();

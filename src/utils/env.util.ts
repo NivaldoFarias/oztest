@@ -12,11 +12,11 @@ import { z } from "zod";
  * - Optional: Geocoding service configuration
  */
 const envSchema = z.object({
-	PORT: z.coerce.number().positive().default(3003),
+	SERVER_PORT: z.coerce.number().positive().default(3003),
 	NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
 
 	// MongoDB Configuration
-	MONGO_URI: z.string().url("Invalid MongoDB connection string"),
+	MONGO_BASE_URI: z.string().url("Invalid MongoDB connection string"),
 
 	// Optional Geocoding Service
 	GEOCODING_API_KEY: z.string().optional().default(""),
@@ -54,7 +54,7 @@ export type Environment = z.infer<typeof envSchema>;
  * @example
  * ```typescript
  * const env = validateEnv();
- * console.log(env.MONGO_URI); // Typed access to environment variables
+ * console.log(env.MONGO_BASE_URI); // Typed access to environment variables
  * ```
  */
 export function validateEnv() {

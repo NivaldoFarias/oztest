@@ -1,10 +1,11 @@
 import Bun from "bun";
-import { beforeEach, describe, expect, it, mock } from "bun:test";
+import { describe, expect, it } from "bun:test";
+
+import type { GeocodeResult } from "@googlemaps/google-maps-services-js";
 
 import { GeoLib } from "@/utils/";
 
-import mockLocation from "../../mocks/location.mock.json" assert { type: "json" };
-import type { GeocodeResult } from "@googlemaps/google-maps-services-js";
+import mockLocation from "@tests/mocks/location.mock.json";
 
 describe("GeoLib", () => {
 	const geoLib = new GeoLib();

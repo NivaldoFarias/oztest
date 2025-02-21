@@ -12,4 +12,48 @@ export const STATUS = {
 	DEFAULT_ERROR: 418,
 } as const;
 
+/**
+ * Constants for region templates.
+ * These constants provide a centralized way to manage region templates.
+ */
+export const REGION_TEMPLATES = {
+	PREFIXES: [
+		"Downtown",
+		"Central",
+		"North",
+		"South",
+		"East",
+		"West",
+		"Modern",
+		"Historic",
+		"Urban",
+		"Metropolitan",
+	],
+	SUFFIXES: [
+		"District",
+		"Quarter",
+		"Hub",
+		"Zone",
+		"Park",
+		"Center",
+		"Area",
+		"Complex",
+		"Corridor",
+		"Square",
+	],
+	SPECIALTIES: [
+		"Business",
+		"Tech",
+		"Cultural",
+		"Innovation",
+		"Financial",
+		"Commercial",
+		"Industrial",
+		"Residential",
+		"Entertainment",
+		"Research",
+	],
+};
+
 export type Status = (typeof STATUS)[keyof typeof STATUS];
+export type RegionTemplate = (typeof REGION_TEMPLATES)[keyof typeof REGION_TEMPLATES];

@@ -1,5 +1,4 @@
 import { faker } from "@faker-js/faker";
-import { ConnectionStates } from "mongoose";
 
 import type { ClientSession, Connection } from "mongoose";
 
@@ -7,20 +6,23 @@ import type { SeedOptions } from "@/schemas/";
 
 import { RegionModel, UserModel } from "@/models";
 import { defaultSeedOptions, seedOptionsSchema } from "@/schemas/";
-import { GeoLibSingleton } from "@/utils/";
+import { GeoLibSingleton, REGION_TEMPLATES } from "@/utils/";
 
+/** Represents a city */
 declare interface City {
 	name: string;
 	coordinates: [number, number];
 	address: string;
 }
 
+/** Represents the context for seeding the database */
 declare interface SeedContext {
 	cities: Array<City>;
 	regionTemplates: string[];
 	session: ClientSession;
 }
 
+/** Represents a user in a batch */
 declare interface BatchUser {
 	name: string;
 	email: string;
@@ -44,10 +46,9 @@ const generateCities = async (count: number, useRealGeocoding: boolean) => {
 	const cities = new Set<string>();
 	const result: Array<City> = [];
 
-	// US mainland approximate bounds
 	const bounds = {
-		lat: { min: 25, max: 49 }, // Florida to Washington state
-		lng: { min: -123, max: -71 }, // Washington to Maine
+		lat: { min: 25, max: 49 },
+		lng: { min: -123, max: -71 },
 	};
 
 	while (result.length < count) {
@@ -78,7 +79,6 @@ const generateCities = async (count: number, useRealGeocoding: boolean) => {
 			}
 		}
 
-		// Use faker data if real geocoding is disabled or failed
 		result.push({
 			name: city,
 			coordinates: [
@@ -100,55 +100,15 @@ const generateCities = async (count: number, useRealGeocoding: boolean) => {
  * @returns Array of district name templates
  */
 const generateRegionTemplates = (count: number) => {
-	const data = {
-		prefixes: [
-			"Downtown",
-			"Central",
-			"North",
-			"South",
-			"East",
-			"West",
-			"Modern",
-			"Historic",
-			"Urban",
-			"Metropolitan",
-		],
-		suffixes: [
-			"District",
-			"Quarter",
-			"Hub",
-			"Zone",
-			"Park",
-			"Center",
-			"Area",
-			"Complex",
-			"Corridor",
-			"Square",
-		],
-		specialties: [
-			"Business",
-			"Tech",
-			"Cultural",
-			"Innovation",
-			"Financial",
-			"Commercial",
-			"Industrial",
-			"Residential",
-			"Entertainment",
-			"Research",
-		],
-	};
-
 	const templates = new Set<string>();
 
 	while (templates.size < count) {
 		const useSpecialty = Math.random() > 0.5;
-		const template =
-			useSpecialty ?
-				`${faker.helpers.arrayElement(data.specialties)} ${faker.helpers.arrayElement(
-					data.suffixes,
-				)}`
-			:	`${faker.helpers.arrayElement(data.prefixes)} ${faker.helpers.arrayElement(data.suffixes)}`;
+		const specialty = faker.helpers.arrayElement(REGION_TEMPLATES.SPECIALTIES);
+		const prefix = faker.helpers.arrayElement(REGION_TEMPLATES.PREFIXES);
+		const suffix = faker.helpers.arrayElement(REGION_TEMPLATES.SUFFIXES);
+
+		const template = useSpecialty ? `${specialty} ${suffix}` : `${prefix} ${suffix}`;
 
 		templates.add(template);
 	}
@@ -200,7 +160,6 @@ export class DatabaseSeeder {
 
 		while (attempts < maxRetries) {
 			try {
-				// Wait for connection to be ready
 				if (connection.readyState !== 1) {
 					await new Promise<void>((resolve) => {
 						connection.once("connected", () => {
@@ -209,7 +168,6 @@ export class DatabaseSeeder {
 					});
 				}
 
-				// Verify we can write to the database
 				const adminDb = connection.db.admin();
 				const status = await adminDb.serverStatus();
 
@@ -260,7 +218,6 @@ export class DatabaseSeeder {
 
 			console.log(`\nProcessing batch ${batchIndex + 1}/${totalBatches}`);
 
-			// Prepare batch data
 			for (let i = batchStart; i < batchEnd; i++) {
 				const firstName = faker.person.firstName();
 				const lastName = faker.person.lastName();
@@ -279,7 +236,6 @@ export class DatabaseSeeder {
 				});
 			}
 
-			// Process batch
 			for (const userData of batchUsers) {
 				const { meta, ...userDoc } = userData;
 				console.log(`Creating user: ${meta.firstName} ${meta.lastName}`);
