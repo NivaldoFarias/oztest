@@ -26,6 +26,7 @@ export default tseslint.config(
 
 			"no-var": "off",
 			"no-unused-vars": "off",
+			"no-console": ["error", { allow: ["warn", "error", "info"] }],
 
 			"@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
 			"@typescript-eslint/dot-notation": "off",

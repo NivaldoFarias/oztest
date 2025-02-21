@@ -26,8 +26,6 @@ export abstract class ServerBase {
 	 */
 	constructor(baseUri = env.MONGO_BASE_URI) {
 		this.database = new Database(baseUri);
-		void this.setupPlugins();
-		this.setupRoutes();
 	}
 
 	/** Configures and registers server plugins */
@@ -35,6 +33,11 @@ export abstract class ServerBase {
 
 	/** Defines API routes and their handlers */
 	protected abstract setupRoutes(): void;
+
+	protected async bootstrap() {
+		await this.setupPlugins();
+		this.setupRoutes();
+	}
 
 	/**
 	 * Starts the server and initializes database connection.
@@ -50,14 +53,17 @@ export abstract class ServerBase {
 	public async start(port = env.SERVER_PORT) {
 		try {
 			await this.database.initialize();
+			await this.bootstrap();
+
 			await this.app.listen({
 				port,
 				host: "0.0.0.0",
 			});
+
 			this.app.log.info(`🚀 Server running at http://localhost:${port}`);
 		} catch (error) {
 			this.app.log.error("Failed to start server:", error);
-			console.error("Failed to start server:", error);
+
 			process.exit(1);
 		}
 	}

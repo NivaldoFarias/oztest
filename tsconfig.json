@@ -10,7 +10,7 @@
         "moduleResolution": "bundler",
         "verbatimModuleSyntax": true,
         "strict": true,
-        "exactOptionalPropertyTypes": true,
+        "exactOptionalPropertyTypes": false,
         "skipLibCheck": true,
         "noFallthroughCasesInSwitch": true,
         "noUnusedLocals": false,

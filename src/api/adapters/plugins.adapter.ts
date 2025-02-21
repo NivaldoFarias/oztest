@@ -6,6 +6,8 @@ import type { FastifyInstance } from "fastify";
 
 import { env } from "@/utils";
 
+import { setupSwagger } from "./swagger.adapter";
+
 /**
  * Configures Fastify plugins and middleware for the server instance.
  * Sets up CORS, validation compilers, and HTTP utilities.
@@ -28,4 +30,6 @@ export async function setupPlugins(app: FastifyInstance) {
 	});
 
 	await app.register(sensible);
+
+	await setupSwagger(app);
 }
