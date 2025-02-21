@@ -4,17 +4,19 @@
 	"private": true,
 	"description": "DevOZ - Tech test",
 	"scripts": {
-		"build": "bun run src/scripts/build.ts server",
-		"build:seed": "bun run src/scripts/build.ts seed",
+		"build": "bun run src/scripts/build.script.ts server",
+		"build:seed": "bun run src/scripts/build.script.ts seed",
 		"start": "node dist/server.js",
-		"dev": "bun --watch src/scripts/server.ts",
-		"dev:seed": "bun --watch src/scripts/seed.ts",
+		"dev": "bun --watch src/scripts/server.script.ts",
+		"dev:seed": "bun --watch src/scripts/seed.script.ts",
 		"test": "bun test",
 		"lint": "eslint .",
 		"lint:fix": "eslint --fix .",
 		"format": "prettier --write .",
-		"server": "bun src/scripts/server.ts",
-		"seed": "bun src/scripts/seed.ts"
+		"server": "bun src/scripts/server.script.ts",
+		"seed": "bun src/scripts/seed.script.ts",
+		"docker:up": "docker compose -f docker/docker-compose.yml up -d mongodb",
+		"docker:down": "docker compose -f docker/docker-compose.yml down"
 	},
 	"engines": {
 		"node": ">=20.18.3"

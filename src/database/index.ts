@@ -23,24 +23,16 @@ export class Database {
 	 * await db.init();
 	 * ```
 	 */
-	constructor(baseUri: string) {
-		this.mongoURI = this.buildConnectionUri(baseUri);
-	}
-
-	/**
-	 * Constructs a MongoDB connection URI with proper options for primary node connection
-	 *
-	 * @param baseUri - Base MongoDB connection string
-	 */
-	private buildConnectionUri(baseUri: string) {
-		const params = new URLSearchParams({
-			directConnection: "true",
-			retryWrites: "true",
+	constructor(
+		baseUri: string,
+		private readonly connectionOptions: ConnectOptions = {
+			directConnection: true,
+			retryWrites: true,
 			w: "majority",
 			readPreference: "primary",
-		});
-
-		return `${baseUri}?${params}`;
+		},
+	) {
+		this.mongoURI = this.buildConnectionUri(baseUri);
 	}
 
 	/**
@@ -106,9 +98,7 @@ export class Database {
 	 * @throws {Error} If not connected to primary or database is not writable
 	 */
 	private async verifyPrimaryConnection() {
-		if (!this.connection) {
-			throw new Error("Database connection not established");
-		}
+		if (!this.connection) throw new Error("Database connection not established");
 
 		const adminDb = this.connection.db.admin();
 
@@ -120,7 +110,6 @@ export class Database {
 			);
 		}
 
-		// Test write capability
 		try {
 			await this.connection.db.command({ ping: 1, writeConcern: { w: "majority" } });
 		} catch (error) {
@@ -130,5 +119,27 @@ export class Database {
 				throw new Error("Database is not writable with unknown error");
 			}
 		}
+	}
+
+	/**
+	 * Constructs a MongoDB connection URI with proper options for primary node connection.
+	 *
+	 * Converts `ConnectOptions` to `Record<string,string>` for `URLSearchParams` compatibility.
+	 *
+	 * @param baseUri - Base MongoDB connection string
+	 */
+	private buildConnectionUri(baseUri: string) {
+		const stringParams = Object.entries(this.connectionOptions).reduce<Record<string, string>>(
+			(acc, [key, value]) => {
+				acc[key] = String(value);
+				return acc;
+			},
+			{},
+		);
+
+		const params = new URLSearchParams(stringParams);
+		const uri = `${baseUri}?${params}`;
+
+		return uri;
 	}
 }

@@ -1,6 +1,8 @@
 import server from "@/api/server";
 
 if (import.meta.main) {
+	let isShutdown = false;
+
 	try {
 		await server.start();
 
@@ -16,6 +18,9 @@ if (import.meta.main) {
 	 * Logs a farewell message and exits with code 0.
 	 */
 	async function shutdown() {
+		if (isShutdown) return;
+		isShutdown = true;
+
 		console.log("\n👋 Shutting down gracefully...");
 		await server.stop();
 		process.exit(0);
