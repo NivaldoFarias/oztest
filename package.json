@@ -11,6 +11,7 @@
 		"dev:seed": "bun --watch src/scripts/seed.ts",
 		"test": "bun test",
 		"lint": "eslint .",
+		"lint:fix": "eslint --fix .",
 		"format": "prettier --write .",
 		"server": "bun src/scripts/server.ts",
 		"seed": "bun src/scripts/seed.ts"

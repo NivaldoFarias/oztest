@@ -1,6 +1,7 @@
 import { faker } from "@faker-js/faker";
-import { createTestServer, createTestUser } from "@tests/setup";
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+
+import { createTestServer, createTestUser } from "@tests/setup";
 
 describe("Region API", () => {
 	let baseUrl: string;
