@@ -6,7 +6,7 @@ import type { FastifyInstance } from "fastify";
 
 import { env } from "@/utils";
 
-import { setupSwagger } from "./swagger.adapter";
+import { setupOpenAPI } from "./openapi.adapter";
 
 /**
  * Configures Fastify plugins and middleware for the server instance.
@@ -31,5 +31,5 @@ export async function setupPlugins(app: FastifyInstance) {
 
 	await app.register(sensible);
 
-	await setupSwagger(app);
+	await setupOpenAPI(app);
 }

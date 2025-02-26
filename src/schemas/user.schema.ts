@@ -69,9 +69,14 @@ export const UpdateUserResponseSchema = z
 	})
 	.openapi("UpdateUserResponse");
 
+export const CreateUserBodySchema = UserSchema.omit({ _id: true, regions: true }).openapi(
+	"CreateUserBody",
+);
+
 export type GetUsersQuery = z.infer<typeof GetUsersQuerySchema>;
 export type UserParams = z.infer<typeof UserParamsSchema>;
 export type UpdateUserBody = z.infer<typeof UpdateUserBodySchema>;
 export type GetUsersResponse = z.infer<typeof GetUsersResponseSchema>;
 export type UpdateUserResponse = z.infer<typeof UpdateUserResponseSchema>;
 export type User = z.infer<typeof UserSchema>;
+export type CreateUserBody = z.infer<typeof CreateUserBodySchema>;

@@ -1,19 +1,19 @@
 import type { FastifyInstance } from "fastify";
 
-import type { GetUsersQuery, UpdateUserBody, UserParams } from "@/schemas";
+import type { CreateUserBody, GetUsersQuery, UpdateUserBody, UserParams } from "@/schemas";
 
-import { registry } from "@/config/registry.config";
-import { z } from "@/config/zod.config";
 import {
+	CreateUserBodySchema,
 	GetUsersQuerySchema,
 	GetUsersResponseSchema,
+	toErrorSchema,
 	UpdateUserBodySchema,
 	UpdateUserResponseSchema,
 	UserParamsSchema,
 	UserSchema,
 } from "@/schemas";
 
-import { getUserById, getUsers, updateUser } from "./handlers.adapter";
+import { createUser, getUserById, getUsers, updateUser } from "./handlers.adapter";
 
 /**
  * Configures API routes for the Fastify server instance.
@@ -27,32 +27,50 @@ import { getUserById, getUsers, updateUser } from "./handlers.adapter";
  * ```
  */
 export function setupRoutes(app: FastifyInstance) {
-	registerRoutes();
-
 	app.get<{ Querystring: GetUsersQuery }>(
 		"/users",
 		{
 			schema: {
-				description: "Get a paginated list of users",
-				tags: ["users"],
 				querystring: GetUsersQuerySchema,
 				response: {
-					"2xx": GetUsersResponseSchema,
+					200: GetUsersResponseSchema,
+					204: {
+						description: "No content",
+						type: "null",
+					},
+					400: toErrorSchema("Bad request"),
+					500: toErrorSchema("Internal server error"),
 				},
 			},
 		},
 		getUsers,
 	);
 
+	app.post<{ Body: CreateUserBody }>(
+		"/users",
+		{
+			schema: {
+				body: CreateUserBodySchema,
+				response: {
+					201: UserSchema,
+					400: toErrorSchema("Bad request"),
+					500: toErrorSchema("Internal server error"),
+				},
+			},
+		},
+		(request) => createUser(request, app),
+	);
+
 	app.get<{ Params: UserParams }>(
 		"/users/:id",
 		{
 			schema: {
-				description: "Get a user by ID",
-				tags: ["users"],
 				params: UserParamsSchema,
 				response: {
 					200: UserSchema,
+					400: toErrorSchema("Bad request"),
+					404: toErrorSchema("User not found"),
+					500: toErrorSchema("Internal server error"),
 				},
 			},
 		},
@@ -63,110 +81,15 @@ export function setupRoutes(app: FastifyInstance) {
 		"/users/:id",
 		{
 			schema: {
-				description: "Update a user by ID",
-				tags: ["users"],
 				params: UserParamsSchema,
 				body: UpdateUserBodySchema,
 				response: {
 					200: UpdateUserResponseSchema,
+					404: toErrorSchema("User not found"),
+					500: toErrorSchema("Internal server error"),
 				},
 			},
 		},
 		(request) => updateUser(request, app),
 	);
-
-	function registerRoutes() {
-		registry.registerPath({
-			method: "get",
-			path: "/users",
-			description: "Get a paginated list of users",
-			tags: ["users"],
-			request: {
-				query: GetUsersQuerySchema,
-			},
-			responses: {
-				200: {
-					description: "List of users with pagination data",
-					content: {
-						"application/json": {
-							schema: GetUsersResponseSchema,
-						},
-					},
-				},
-			},
-		});
-
-		// Register GET /users/:id
-		registry.registerPath({
-			method: "get",
-			path: "/users/{id}",
-			description: "Get a user by ID",
-			tags: ["users"],
-			request: {
-				params: UserParamsSchema,
-			},
-			responses: {
-				200: {
-					description: "User details",
-					content: {
-						"application/json": {
-							schema: UserSchema,
-						},
-					},
-				},
-				404: {
-					description: "User not found",
-					content: {
-						"application/json": {
-							schema: z.object({
-								statusCode: z.number(),
-								error: z.string(),
-								message: z.literal("User not found"),
-							}),
-						},
-					},
-				},
-			},
-		});
-
-		// Register PUT /users/:id
-		registry.registerPath({
-			method: "put",
-			path: "/users/{id}",
-			description: "Update a user by ID",
-			tags: ["users"],
-			request: {
-				params: UserParamsSchema,
-				body: {
-					content: {
-						"application/json": {
-							schema: UpdateUserBodySchema,
-						},
-					},
-				},
-			},
-			responses: {
-				200: {
-					description: "User updated successfully",
-					content: {
-						"application/json": {
-							schema: UpdateUserResponseSchema,
-						},
-					},
-				},
-				404: {
-					description: "User not found",
-					content: {
-						"application/json": {
-							schema: z.object({
-								statusCode: z.number(),
-								error: z.string(),
-								message: z.literal("User not found"),
-							}),
-						},
-					},
-				},
-			},
-		});
-	}
 }

@@ -1,5 +1,7 @@
+import { join } from "path";
+
 import { OpenApiGeneratorV3 } from "@asteasolutions/zod-to-openapi";
-import swagger from "@fastify/swagger";
+import fastifyStatic from "@fastify/static";
 import scalarReference from "@scalar/fastify-api-reference";
 
 import type { FastifyInstance } from "fastify";
@@ -10,17 +12,17 @@ import { env } from "@/utils/";
 import pkgJson from "../../../package.json";
 
 /**
- * Configures Swagger documentation with proper Zod schema integration.
+ * Configures OpenAPI documentation with proper Zod schema integration.
  * Uses zod-to-openapi to generate OpenAPI specifications from Zod schemas.
  *
- * @param app The Fastify instance to configure Swagger for
+ * @param app The Fastify instance to configure OpenAPI for
  *
  * @example
  * ```typescript
- * await setupSwagger(fastifyApp);
+ * await setupOpenAPI(fastifyApp);
  * ```
  */
-export async function setupSwagger(app: FastifyInstance) {
+export async function setupOpenAPI(app: FastifyInstance) {
 	const document = new OpenApiGeneratorV3(registry.definitions).generateDocument({
 		openapi: "3.0.0",
 		info: {
@@ -36,9 +38,9 @@ export async function setupSwagger(app: FastifyInstance) {
 		],
 	});
 
-	await app.register(swagger, {
-		openapi: document,
-		hideUntagged: true,
+	await app.register(fastifyStatic, {
+		root: join(process.cwd(), "public"),
+		prefix: "/public/",
 	});
 
 	await app.register(scalarReference, {
@@ -47,6 +49,7 @@ export async function setupSwagger(app: FastifyInstance) {
 			spec: {
 				content: document,
 			},
+			favicon: "/public/favicon.ico",
 		},
 	});
 }

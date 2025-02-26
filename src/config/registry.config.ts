@@ -1,5 +1,7 @@
 import { OpenAPIRegistry } from "@asteasolutions/zod-to-openapi";
 
+import { toResponseConfig } from "@/utils/schemas.util";
+
 import * as Schemas from "../schemas/";
 
 export const registry = createRegistry();
@@ -13,6 +15,7 @@ function createRegistry() {
 
 	registerCommonSchemas();
 	registerUserSchemas();
+	registerRoutes();
 
 	return registry;
 
@@ -96,5 +99,135 @@ function createRegistry() {
 				description: "Response for user update operations",
 			}),
 		);
+	}
+
+	/**
+	 * Registers API routes for OpenAPI documentation.
+	 * Includes request/response schemas for route operations.
+	 */
+	function registerRoutes() {
+		registry.registerPath({
+			method: "get",
+			path: "/users",
+			description: "Get a paginated list of users",
+			tags: ["users"],
+			request: {
+				query: Schemas.GetUsersQuerySchema,
+			},
+			responses: {
+				200: {
+					description: "List of users with pagination data",
+					content: {
+						"application/json": {
+							schema: Schemas.GetUsersResponseSchema,
+						},
+					},
+				},
+				204: {
+					description: "No content",
+				},
+				400: toResponseConfig(Schemas.toErrorSchema("Bad request"), {
+					description: "Bad request",
+				}),
+				500: toResponseConfig(Schemas.toErrorSchema("Internal server error"), {
+					description: "Internal server error",
+				}),
+			},
+		});
+
+		registry.registerPath({
+			method: "post",
+			path: "/users",
+			description: "Create a new user",
+			tags: ["users"],
+			request: {
+				body: {
+					description: "The user to create",
+					content: {
+						"application/json": {
+							schema: Schemas.CreateUserBodySchema,
+						},
+					},
+				},
+			},
+			responses: {
+				201: {
+					description: "The created user",
+					content: {
+						"application/json": {
+							schema: Schemas.UserSchema,
+						},
+					},
+				},
+				400: toResponseConfig(Schemas.toErrorSchema("Bad request"), {
+					description: "Bad request",
+				}),
+				500: toResponseConfig(Schemas.toErrorSchema("Internal server error"), {
+					description: "Internal server error",
+				}),
+			},
+		});
+
+		registry.registerPath({
+			method: "get",
+			path: "/users/{id}",
+			description: "Get a user by ID",
+			tags: ["users"],
+			request: {
+				params: Schemas.UserParamsSchema,
+			},
+			responses: {
+				200: {
+					description: "User details",
+					content: {
+						"application/json": {
+							schema: Schemas.UserSchema,
+						},
+					},
+				},
+				400: toResponseConfig(Schemas.toErrorSchema("Bad request"), {
+					description: "Bad request",
+				}),
+				404: toResponseConfig(Schemas.toErrorSchema("User not found"), {
+					description: "User not found",
+				}),
+				500: toResponseConfig(Schemas.toErrorSchema("Internal server error"), {
+					description: "Internal server error",
+				}),
+			},
+		});
+
+		registry.registerPath({
+			method: "put",
+			path: "/users/{id}",
+			description: "Update a user by ID",
+			tags: ["users"],
+			request: {
+				params: Schemas.UserParamsSchema,
+				body: {
+					content: {
+						"application/json": {
+							schema: Schemas.UpdateUserBodySchema,
+						},
+					},
+				},
+			},
+			responses: {
+				200: {
+					description: "User updated successfully",
+					content: {
+						"application/json": {
+							schema: Schemas.UpdateUserResponseSchema,
+						},
+					},
+				},
+				404: toResponseConfig(Schemas.toErrorSchema("User not found"), {
+					description: "User not found",
+				}),
+				500: toResponseConfig(Schemas.toErrorSchema("Internal server error"), {
+					description: "Internal server error",
+				}),
+			},
+		});
 	}
 }
