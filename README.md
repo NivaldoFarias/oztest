@@ -231,7 +231,7 @@ Creates a new user.
 }
 ```
 
-> **Note:** You must provide either `address` or `coordinates`, but not both.
+> **Note:** You must provide either `address` or `coordinates`, but not both. The API will automatically convert between them using a geocoding service.
 
 **Responses:**
 
@@ -267,6 +267,8 @@ Updates an existing user.
 }
 ```
 
+> **Note:** When updating location data, you must provide either `address` or `coordinates`, but not both. The API will automatically update the other field using a geocoding service.
+
 **Responses:**
 
 | Status Code | Description           | Content             |
@@ -274,6 +276,28 @@ Updates an existing user.
 | `200`       | Success               | `{ "status": 200 }` |
 | `404`       | Not Found             | Error message       |
 | `500`       | Internal Server Error | Error message       |
+
+#### Delete User
+
+```http
+DELETE /users/:id
+```
+
+Deletes a user by ID.
+
+**URL Parameters:**
+
+| Parameter | Type     | Description |
+| --------- | -------- | ----------- |
+| `id`      | `string` | User ID     |
+
+**Responses:**
+
+| Status Code | Description           | Content                                                     |
+| ----------- | --------------------- | ----------------------------------------------------------- |
+| `200`       | Success               | `{ "status": 200, "message": "User deleted successfully" }` |
+| `404`       | Not Found             | Error message                                               |
+| `500`       | Internal Server Error | Error message                                               |
 
 ### Regions
 
@@ -312,6 +336,8 @@ src/
 3. **Implementing OpenAPI with Zod** for runtime type validation and automatic documentation generation
 4. **Separating route adapters from business logic** for better testability and separation of concerns
 5. **Using Typegoose** for type-safe MongoDB interactions
+6. **Google Maps geocoding service implementation** for robust and reliable conversion between addresses and coordinates, leveraging the power and accuracy of Google's geolocation data
+7. **Schema validation refinements** to enforce business rules such as providing either address or coordinates
 
 ## Testing
 

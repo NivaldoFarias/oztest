@@ -4,6 +4,7 @@ import type { CreateUserBody, GetUsersQuery, UpdateUserBody, UserParams } from "
 
 import { UserModel } from "@/models";
 import { STATUS } from "@/utils";
+import { GeoCodingSingleton } from "@/utils/geocoding.util";
 
 /**
  * Retrieves a paginated list of users with optional pagination parameters.
@@ -20,6 +21,11 @@ export async function getUsers(request: FastifyRequest<{ Querystring: GetUsersQu
 	const { page, limit } = request.query;
 	const [users, total] = await Promise.all([UserModel.find().lean(), UserModel.count()]);
 
+	// If no users found, return 204 No Content
+	if (users.length === 0) {
+		return { rows: [], page, limit, total: 0 };
+	}
+
 	return {
 		rows: users.map((user) => ({
 			...user,
@@ -33,6 +39,7 @@ export async function getUsers(request: FastifyRequest<{ Querystring: GetUsersQu
 
 /**
  * Creates a new user with the provided information.
+ * Handles geocoding between address and coordinates automatically.
  *
  * @param request The Fastify request containing the user creation data
  * @param app The Fastify instance for error handling
@@ -50,14 +57,55 @@ export async function createUser(
 ) {
 	try {
 		const userData = request.body;
-		const user = new UserModel(userData);
+
+		// Handle address/coordinate conversion
+		if (userData.address && !userData.coordinates) {
+			try {
+				const locationData = await GeoCodingSingleton.getLocationFromAddress(userData.address);
+				userData.coordinates = [
+					locationData.geometry.location.lng,
+					locationData.geometry.location.lat,
+				];
+			} catch (error) {
+				throw app.httpErrors.badRequest(
+					`Invalid address: ${error instanceof Error ? error.message : "Unknown error"}`,
+				);
+			}
+		} else if (userData.coordinates && !userData.address) {
+			try {
+				const locationData = await GeoCodingSingleton.getLocationFromCoordinates({
+					lat: userData.coordinates[1],
+					lng: userData.coordinates[0],
+				});
+				userData.address = locationData.formatted_address;
+			} catch (error) {
+				throw app.httpErrors.badRequest(
+					`Invalid coordinates: ${error instanceof Error ? error.message : "Unknown error"}`,
+				);
+			}
+		}
+
+		const user = new UserModel({
+			...userData,
+			regions: [],
+		});
+
 		await user.save();
 
 		return {
 			...user.toObject(),
 			regions: [],
 		};
-	} catch (error) {
+	} catch (error: any) {
+		if (error.code === 11000) {
+			throw app.httpErrors.conflict("User with this email already exists");
+		}
+
+		// If error was already created by us, pass it through
+		if (error.statusCode) {
+			throw error;
+		}
+
 		throw app.httpErrors.badRequest("Failed to create user");
 	}
 }
@@ -92,6 +140,7 @@ export async function getUserById(
 
 /**
  * Updates user information based on provided data.
+ * Handles geocoding between address and coordinates automatically.
  *
  * @param request The Fastify request containing user ID and update data
  * @param app The Fastify instance for error handling
@@ -115,8 +164,62 @@ export async function updateUser(
 		throw app.httpErrors.notFound("User not found");
 	}
 
+	// Handle address/coordinate conversion
+	if (update.address && !update.coordinates) {
+		try {
+			const locationData = await GeoCodingSingleton.getLocationFromAddress(update.address);
+			update.coordinates = [locationData.geometry.location.lng, locationData.geometry.location.lat];
+		} catch (error) {
+			throw app.httpErrors.badRequest(
+				`Invalid address: ${error instanceof Error ? error.message : "Unknown error"}`,
+			);
+		}
+	} else if (update.coordinates && !update.address) {
+		try {
+			const locationData = await GeoCodingSingleton.getLocationFromCoordinates({
+				lat: update.coordinates[1],
+				lng: update.coordinates[0],
+			});
+			update.address = locationData.formatted_address;
+		} catch (error) {
+			throw app.httpErrors.badRequest(
+				`Invalid coordinates: ${error instanceof Error ? error.message : "Unknown error"}`,
+			);
+		}
+	}
+
 	Object.assign(user, update);
 	await user.save();
 
 	return { status: STATUS.UPDATED };
+}
+
+/**
+ * Deletes a user by their ID.
+ *
+ * @param request The Fastify request containing the user ID parameter
+ * @param app The Fastify instance for error handling
+ * @throws {NotFoundError} If user with specified ID doesn't exist
+ *
+ * @example
+ * ```typescript
+ * const result = await deleteUser(request, app);
+ * console.log(result); // => { status: 200, message: "User deleted successfully" }
+ * ```
+ */
+export async function deleteUser(
+	request: FastifyRequest<{ Params: UserParams }>,
+	app: FastifyInstance,
+) {
+	const { id } = request.params;
+	const result = await UserModel.deleteOne({ _id: id });
+
+	if (result.deletedCount === 0) {
+		throw app.httpErrors.notFound("User not found");
+	}
+
+	return {
+		status: STATUS.OK,
+		message: "User deleted successfully",
+	};
 }

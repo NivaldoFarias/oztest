@@ -2,20 +2,20 @@ import type { Ref } from "@typegoose/typegoose";
 
 import { pre, getModelForClass, prop } from "@typegoose/typegoose";
 
-import { GeoLibSingleton } from "@/utils/";
+import { GeoCodingSingleton } from "@/utils/";
 import { Base } from "@/models/base.model";
 import type { Region } from "@/models/region.model";
 
 /** User model representing application users with location data */
 @pre<User>("save", async function (next) {
 	if (this.isModified("coordinates")) {
-		const { formatted_address } = await GeoLibSingleton.getLocationFromCoordinates(
+		const { formatted_address } = await GeoCodingSingleton.getLocationFromCoordinates(
 			this.coordinates,
 		);
 
 		this.address = formatted_address;
 	} else if (this.isModified("address")) {
-		const { geometry } = await GeoLibSingleton.getLocationFromAddress(this.address);
+		const { geometry } = await GeoCodingSingleton.getLocationFromAddress(this.address);
 
 		this.coordinates = [geometry.location.lng, geometry.location.lat];
 	}

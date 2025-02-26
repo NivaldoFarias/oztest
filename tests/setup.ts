@@ -6,7 +6,7 @@ import "@/database";
 
 import server from "@/api/server";
 import { UserModel } from "@/models";
-import { GeoLib } from "@/utils/geo.util";
+import { GeoCoding } from "@/utils/geocoding.util";
 
 /**
  * Creates a test session and mocks external dependencies
@@ -28,7 +28,7 @@ export async function setupTestEnvironment() {
 		),
 	};
 
-	Object.assign(GeoLib, geoLibMock);
+	Object.assign(GeoCoding, geoLibMock);
 
 	return { session, geoLibMock };
 }

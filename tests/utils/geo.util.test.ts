@@ -3,12 +3,12 @@ import { describe, expect, it } from "bun:test";
 
 import type { GeocodeResult } from "@googlemaps/google-maps-services-js";
 
-import { GeoLib } from "@/utils/";
+import { GeoCoding } from "@/utils/";
 
 import mockLocation from "@tests/mocks/location.mock.json";
 
 describe("GeoLib", () => {
-	const geoLib = new GeoLib();
+	const geoLib = new GeoCoding();
 	const exactCoordinates = mockLocation as GeocodeResult;
 
 	it("should get address from coordinates", async () => {

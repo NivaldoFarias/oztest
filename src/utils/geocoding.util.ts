@@ -15,7 +15,7 @@ import { env } from "./env.util";
 /**
  * Utility class for Google Maps geolocation services
  */
-export class GeoLib {
+export class GeoCoding {
 	private readonly baseConfig: GeocodeRequest = {
 		params: {
 			key: env.GEOCODING_API_KEY,
@@ -238,4 +238,4 @@ export class GeoLib {
  * Creates and exports a singleton instance of the GeoLib class using OpenStreetMap as the default provider.
  * This ensures all geolocation operations use the same instance and configuration.
  */
-export const GeoLibSingleton = new GeoLib();
+export const GeoCodingSingleton = new GeoCoding();

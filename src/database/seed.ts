@@ -6,7 +6,7 @@ import type { SeedOptions } from "@/schemas/";
 
 import { RegionModel, UserModel } from "@/models";
 import { defaultSeedOptions, seedOptionsSchema } from "@/schemas/";
-import { GeoLibSingleton, REGION_TEMPLATES } from "@/utils/";
+import { GeoCodingSingleton, REGION_TEMPLATES } from "@/utils/";
 
 /** Represents a city */
 declare interface City {
@@ -61,7 +61,7 @@ const generateCities = async (count: number, useRealGeocoding: boolean) => {
 
 		if (useRealGeocoding) {
 			try {
-				const locationDetails = await GeoLibSingleton.getLocationFromAddress(address);
+				const locationDetails = await GeoCodingSingleton.getLocationFromAddress(address);
 				const coordinates: [number, number] = [
 					Number(locationDetails.geometry.location.lng),
 					Number(locationDetails.geometry.location.lat),
@@ -251,7 +251,7 @@ export class DatabaseSeeder {
 	 */
 	private async getGeocodedCoordinates(address: string, fallbackCoordinates: [number, number]) {
 		try {
-			const locationDetails = await GeoLibSingleton.getLocationFromAddress(address);
+			const locationDetails = await GeoCodingSingleton.getLocationFromAddress(address);
 			return [
 				Number(locationDetails.geometry.location.lng),
 				Number(locationDetails.geometry.location.lat),

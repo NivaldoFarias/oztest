@@ -27,23 +27,39 @@ export const UserParamsSchema = z
  */
 export const UpdateUserBodySchema = z
 	.object({
-		update: z.object({
-			name: z.string().optional().openapi({ description: "The full name of the user" }),
-			email: z.string().optional().openapi({ description: "The email address of the user" }),
-			address: z.string().optional().openapi({ description: "The physical address of the user" }),
-			coordinates: z
-				.tuple([z.number(), z.number()])
-				.optional()
-				.openapi({ description: "The geographical coordinates of the user" }),
-		}),
+		update: z
+			.object({
+				name: z.string().optional().openapi({ description: "The full name of the user" }),
+				email: z.string().optional().openapi({ description: "The email address of the user" }),
+				address: z.string().optional().openapi({ description: "The physical address of the user" }),
+				coordinates: z
+					.tuple([z.number(), z.number()])
+					.optional()
+					.openapi({ description: "The geographical coordinates of the user" }),
+			})
+			.refine(
+				(data) => {
+					// At least one of address or coordinates should be provided, but not both
+					return (data.address !== undefined) !== (data.coordinates !== undefined);
+				},
+				{
+					message: "Provide either address OR coordinates, but not both or neither",
+					path: ["address", "coordinates"],
+				},
+			),
 	})
 	.openapi("UpdateUserBody");
 
+/**
+ * Schema defining the structure of a user in the system.
+ * Contains all user information including ID, personal details,
+ * location data and associated regions.
+ */
 export const UserSchema = z
 	.object({
 		_id: z.string().openapi({ description: "The ID of the user" }),
 		name: z.string().openapi({ description: "The full name of the user" }),
-		email: z.string().openapi({ description: "The email address of the user" }),
+		email: z.string().optional().openapi({ description: "The email address of the user" }),
 		address: z.string().openapi({ description: "The physical address of the user" }),
 		coordinates: z.tuple([z.number(), z.number()]).openapi({
 			description: "The geographical coordinates of the user",
@@ -69,9 +85,41 @@ export const UpdateUserResponseSchema = z
 	})
 	.openapi("UpdateUserResponse");
 
-export const CreateUserBodySchema = UserSchema.omit({ _id: true, regions: true }).openapi(
-	"CreateUserBody",
-);
+/**
+ * Schema for user creation with precise validation rules.
+ * Enforces providing either address or coordinates, but not both or neither.
+ */
+export const CreateUserBodySchema = z
+	.object({
+		name: z.string().openapi({ description: "The full name of the user" }),
+		email: z.string().optional().openapi({ description: "The email address of the user" }),
+		address: z.string().optional().openapi({ description: "The physical address of the user" }),
+		coordinates: z
+			.tuple([z.number(), z.number()])
+			.optional()
+			.openapi({ description: "The geographical coordinates of the user [longitude, latitude]" }),
+	})
+	.refine(
+		(data) => {
+			// At least one of address or coordinates should be provided, but not both
+			return (data.address !== undefined) !== (data.coordinates !== undefined);
+		},
+		{
+			message: "Provide either address OR coordinates, but not both or neither",
+			path: ["address", "coordinates"],
+		},
+	)
+	.openapi("CreateUserBody");
+
+/**
+ * Schema for DELETE user response.
+ */
+export const DeleteUserResponseSchema = z
+	.object({
+		status: z.number().openapi({ description: "The status code of the response" }),
+		message: z.string().openapi({ description: "Success message" }),
+	})
+	.openapi("DeleteUserResponse");
 
 export type GetUsersQuery = z.infer<typeof GetUsersQuerySchema>;
 export type UserParams = z.infer<typeof UserParamsSchema>;
@@ -80,3 +128,4 @@ export type GetUsersResponse = z.infer<typeof GetUsersResponseSchema>;
 export type UpdateUserResponse = z.infer<typeof UpdateUserResponseSchema>;
 export type User = z.infer<typeof UserSchema>;
 export type CreateUserBody = z.infer<typeof CreateUserBodySchema>;
+export type DeleteUserResponse = z.infer<typeof DeleteUserResponseSchema>;

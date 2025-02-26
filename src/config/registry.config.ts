@@ -99,6 +99,13 @@ function createRegistry() {
 				description: "Response for user update operations",
 			}),
 		);
+
+		registry.register(
+			"DeleteUserResponse",
+			Schemas.DeleteUserResponseSchema.openapi({
+				description: "Response for user deletion operations",
+			}),
+		);
 	}
 
 	/**
@@ -218,6 +225,32 @@ function createRegistry() {
 					content: {
 						"application/json": {
 							schema: Schemas.UpdateUserResponseSchema,
+						},
+					},
+				},
+				404: toResponseConfig(Schemas.toErrorSchema("User not found"), {
+					description: "User not found",
+				}),
+				500: toResponseConfig(Schemas.toErrorSchema("Internal server error"), {
+					description: "Internal server error",
+				}),
+			},
+		});
+
+		registry.registerPath({
+			method: "delete",
+			path: "/users/{id}",
+			description: "Delete a user by ID",
+			tags: ["users"],
+			request: {
+				params: Schemas.UserParamsSchema,
+			},
+			responses: {
+				200: {
+					description: "User deleted successfully",
+					content: {
+						"application/json": {
+							schema: Schemas.DeleteUserResponseSchema,
 						},
 					},
 				},

@@ -4,6 +4,7 @@ import type { CreateUserBody, GetUsersQuery, UpdateUserBody, UserParams } from "
 
 import {
 	CreateUserBodySchema,
+	DeleteUserResponseSchema,
 	GetUsersQuerySchema,
 	GetUsersResponseSchema,
 	toErrorSchema,
@@ -13,7 +14,7 @@ import {
 	UserSchema,
 } from "@/schemas";
 
-import { createUser, getUserById, getUsers, updateUser } from "./handlers.adapter";
+import { createUser, deleteUser, getUserById, getUsers, updateUser } from "./handlers.adapter";
 
 /**
  * Configures API routes for the Fastify server instance.
@@ -91,5 +92,20 @@ export function setupRoutes(app: FastifyInstance) {
 			},
 		},
 		(request) => updateUser(request, app),
+	);
+
+	app.delete<{ Params: UserParams }>(
+		"/users/:id",
+		{
+			schema: {
+				params: UserParamsSchema,
+				response: {
+					200: DeleteUserResponseSchema,
+					404: toErrorSchema("User not found"),
+					500: toErrorSchema("Internal server error"),
+				},
+			},
+		},
+		(request) => deleteUser(request, app),
 	);
 }
