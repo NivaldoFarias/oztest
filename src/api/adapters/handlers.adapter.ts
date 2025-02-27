@@ -1,9 +1,12 @@
+import { MongoServerError } from "mongodb";
+
 import type { FastifyInstance, FastifyRequest } from "fastify";
 
 import type { CreateUserBody, GetUsersQuery, UpdateUserBody, UserParams } from "@/schemas";
 
+import { ApiKeyService } from "@/auth/api-key.service";
 import { UserModel } from "@/models";
-import { STATUS } from "@/utils";
+import { AppError, BadRequestError, ConflictError, NotFoundError, STATUS } from "@/utils";
 import { GeoCodingSingleton } from "@/utils/geocoding.util";
 
 /**
@@ -40,6 +43,7 @@ export async function getUsers(request: FastifyRequest<{ Querystring: GetUsersQu
 /**
  * Creates a new user with the provided information.
  * Handles geocoding between address and coordinates automatically.
+ * Generates a secure API key for the user.
  *
  * @param request The Fastify request containing the user creation data
  * @param app The Fastify instance for error handling
@@ -47,8 +51,8 @@ export async function getUsers(request: FastifyRequest<{ Querystring: GetUsersQu
  *
  * @example
  * ```typescript
- * const newUser = await createUser(request, app);
- * console.log(newUser); // => Created User object
+ * const result = await createUser(request, app);
+ * console.log(result); // => { user: User object, apiKey: "generated-api-key" }
  * ```
  */
 export async function createUser(
@@ -67,7 +71,7 @@ export async function createUser(
 					locationData.geometry.location.lat,
 				];
 			} catch (error) {
-				throw app.httpErrors.badRequest(
+				throw new BadRequestError(
 					`Invalid address: ${error instanceof Error ? error.message : "Unknown error"}`,
 				);
 			}
@@ -79,34 +83,45 @@ export async function createUser(
 				});
 				userData.address = locationData.formatted_address;
 			} catch (error) {
-				throw app.httpErrors.badRequest(
+				throw new BadRequestError(
 					`Invalid coordinates: ${error instanceof Error ? error.message : "Unknown error"}`,
 				);
 			}
 		}
 
+		// Generate a secure API key and its hash
+		const apiKey = ApiKeyService.generate();
+		const apiKeyHash = ApiKeyService.hash(apiKey);
+
 		const user = new UserModel({
 			...userData,
 			regions: [],
+			apiKeyHash,
 		});
 
 		await user.save();
 
+		// Return user object and API key (only returned once during creation)
 		return {
-			...user.toObject(),
-			regions: [],
+			user: {
+				...user.toObject(),
+				regions: [],
+			},
+			apiKey,
 		};
-	} catch (error: any) {
-		if (error.code === 11000) {
-			throw app.httpErrors.conflict("User with this email already exists");
+	} catch (error) {
+		if (error instanceof MongoServerError) {
+			if (error.code === 11000) {
+				throw new ConflictError("User with this email already exists");
+			}
 		}
 
 		// If error was already created by us, pass it through
-		if (error.statusCode) {
+		if (error instanceof AppError) {
 			throw error;
 		}
 
-		throw app.httpErrors.badRequest("Failed to create user");
+		throw new BadRequestError("Failed to create user");
 	}
 }
 
@@ -130,7 +145,7 @@ export async function getUserById(
 	const { id } = request.params;
 	const user = await UserModel.findOne({ _id: id }).lean();
 
-	if (!user) throw app.httpErrors.notFound("User not found");
+	if (!user) throw new NotFoundError("User not found");
 
 	return {
 		...user,
@@ -161,7 +176,7 @@ export async function updateUser(
 	const user = await UserModel.findOne({ _id: id });
 
 	if (!user) {
-		throw app.httpErrors.notFound("User not found");
+		throw new NotFoundError("User not found");
 	}
 
 	// Handle address/coordinate conversion
@@ -170,7 +185,7 @@ export async function updateUser(
 			const locationData = await GeoCodingSingleton.getLocationFromAddress(update.address);
 			update.coordinates = [locationData.geometry.location.lng, locationData.geometry.location.lat];
 		} catch (error) {
-			throw app.httpErrors.badRequest(
+			throw new BadRequestError(
 				`Invalid address: ${error instanceof Error ? error.message : "Unknown error"}`,
 			);
 		}
@@ -182,7 +197,7 @@ export async function updateUser(
 			});
 			update.address = locationData.formatted_address;
 		} catch (error) {
-			throw app.httpErrors.badRequest(
+			throw new BadRequestError(
 				`Invalid coordinates: ${error instanceof Error ? error.message : "Unknown error"}`,
 			);
 		}
@@ -215,7 +230,7 @@ export async function deleteUser(
 	const result = await UserModel.deleteOne({ _id: id });
 
 	if (result.deletedCount === 0) {
-		throw app.httpErrors.notFound("User not found");
+		throw new NotFoundError("User not found");
 	}
 
 	return {

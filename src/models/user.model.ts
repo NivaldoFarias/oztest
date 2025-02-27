@@ -1,10 +1,11 @@
-import type { Ref } from "@typegoose/typegoose";
+import type { Ref, DocumentType } from "@typegoose/typegoose";
 
-import { pre, getModelForClass, prop } from "@typegoose/typegoose";
+import { pre, getModelForClass, prop, modelOptions } from "@typegoose/typegoose";
 
 import { GeoCodingSingleton } from "@/utils/";
 import { Base } from "@/models/base.model";
 import type { Region } from "@/models/region.model";
+import { ApiKeyService } from "@/auth/api-key.service";
 
 /** User model representing application users with location data */
 @pre<User>("save", async function (next) {
@@ -22,6 +23,7 @@ import type { Region } from "@/models/region.model";
 
 	next();
 })
+@modelOptions({ schemaOptions: { timestamps: true } })
 export class User extends Base {
 	@prop({ required: true })
 	public name!: string;
@@ -37,6 +39,26 @@ export class User extends Base {
 
 	@prop({ required: true, default: [], ref: "Region", type: () => String })
 	public regions!: Ref<Region>[];
+
+	@prop({ required: true })
+	public apiKeyHash!: string;
+
+	/**
+	 * Verifies if a provided API key matches this user's stored hash
+	 * Uses cryptographically secure comparison to prevent timing attacks
+	 *
+	 * @param apiKey - The API key to verify against this user
+	 * @returns Boolean indicating if the key is valid
+	 *
+	 * @example
+	 * ```typescript
+	 * const user = await UserModel.findById(id);
+	 * const isValidKey = user.verifyApiKey(requestApiKey);
+	 * ```
+	 */
+	public verifyApiKey(this: DocumentType<User>, apiKey: string): boolean {
+		return ApiKeyService.verify(apiKey, this.apiKeyHash);
+	}
 }
 
 export const UserModel = getModelForClass(User);

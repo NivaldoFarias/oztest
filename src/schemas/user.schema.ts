@@ -101,12 +101,14 @@ export const CreateUserBodySchema = z
 	})
 	.refine(
 		(data) => {
-			// At least one of address or coordinates should be provided, but not both
-			return (data.address !== undefined) !== (data.coordinates !== undefined);
+			// Check if exactly one of address or coordinates is provided
+			const hasAddress = data.address !== undefined;
+			const hasCoordinates = data.coordinates !== undefined;
+			return hasAddress ? !hasCoordinates : hasCoordinates;
 		},
 		{
 			message: "Provide either address OR coordinates, but not both or neither",
-			path: ["address", "coordinates"],
+			path: ["locationData"],
 		},
 	)
 	.openapi("CreateUserBody");
@@ -121,6 +123,33 @@ export const DeleteUserResponseSchema = z
 	})
 	.openapi("DeleteUserResponse");
 
+/**
+ * Schema for user creation success response including the API key
+ * This is only returned once during user creation
+ */
+export const CreateUserResponseSchema = z
+	.object({
+		user: UserSchema,
+		apiKey: z.string().openapi({
+			description: "The API key for authentication. Only returned once during user creation.",
+		}),
+	})
+	.openapi("CreateUserResponse");
+
+/**
+ * Schema for API key regeneration response
+ */
+export const RegenerateApiKeyResponseSchema = z
+	.object({
+		apiKey: z.string().openapi({
+			description: "The newly generated API key",
+		}),
+		message: z.string().openapi({
+			description: "Success message",
+		}),
+	})
+	.openapi("RegenerateApiKeyResponse");
+
 export type GetUsersQuery = z.infer<typeof GetUsersQuerySchema>;
 export type UserParams = z.infer<typeof UserParamsSchema>;
 export type UpdateUserBody = z.infer<typeof UpdateUserBodySchema>;
@@ -129,3 +158,5 @@ export type UpdateUserResponse = z.infer<typeof UpdateUserResponseSchema>;
 export type User = z.infer<typeof UserSchema>;
 export type CreateUserBody = z.infer<typeof CreateUserBodySchema>;
 export type DeleteUserResponse = z.infer<typeof DeleteUserResponseSchema>;
+export type CreateUserResponse = z.infer<typeof CreateUserResponseSchema>;
+export type RegenerateApiKeyResponse = z.infer<typeof RegenerateApiKeyResponseSchema>;

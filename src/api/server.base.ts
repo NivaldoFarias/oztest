@@ -35,8 +35,13 @@ export abstract class ServerBase {
 	protected abstract setupRoutes(): void;
 
 	protected async bootstrap() {
-		await this.setupPlugins();
-		this.setupRoutes();
+		try {
+			await this.setupPlugins();
+			this.setupRoutes();
+		} catch (error) {
+			this.app.log.error("Error during server bootstrap:", error);
+			throw error; // Rethrow to be caught by the start method
+		}
 	}
 
 	/**

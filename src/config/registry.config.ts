@@ -1,6 +1,6 @@
 import { OpenAPIRegistry } from "@asteasolutions/zod-to-openapi";
 
-import { toResponseConfig } from "@/utils/schemas.util";
+import { toResponseConfig } from "@/schemas/http.schema";
 
 import * as Schemas from "../schemas/";
 
@@ -133,10 +133,10 @@ function createRegistry() {
 				204: {
 					description: "No content",
 				},
-				400: toResponseConfig(Schemas.toErrorSchema("Bad request"), {
+				400: toResponseConfig(Schemas.ErrorSchemas.badRequest, {
 					description: "Bad request",
 				}),
-				500: toResponseConfig(Schemas.toErrorSchema("Internal server error"), {
+				500: toResponseConfig(Schemas.ErrorSchemas.internalError, {
 					description: "Internal server error",
 				}),
 			},
@@ -166,10 +166,10 @@ function createRegistry() {
 						},
 					},
 				},
-				400: toResponseConfig(Schemas.toErrorSchema("Bad request"), {
+				400: toResponseConfig(Schemas.ErrorSchemas.badRequest, {
 					description: "Bad request",
 				}),
-				500: toResponseConfig(Schemas.toErrorSchema("Internal server error"), {
+				500: toResponseConfig(Schemas.ErrorSchemas.internalError, {
 					description: "Internal server error",
 				}),
 			},
@@ -192,13 +192,13 @@ function createRegistry() {
 						},
 					},
 				},
-				400: toResponseConfig(Schemas.toErrorSchema("Bad request"), {
+				400: toResponseConfig(Schemas.ErrorSchemas.badRequest, {
 					description: "Bad request",
 				}),
-				404: toResponseConfig(Schemas.toErrorSchema("User not found"), {
+				404: toResponseConfig(Schemas.ErrorSchemas.notFound, {
 					description: "User not found",
 				}),
-				500: toResponseConfig(Schemas.toErrorSchema("Internal server error"), {
+				500: toResponseConfig(Schemas.ErrorSchemas.internalError, {
 					description: "Internal server error",
 				}),
 			},
@@ -228,10 +228,10 @@ function createRegistry() {
 						},
 					},
 				},
-				404: toResponseConfig(Schemas.toErrorSchema("User not found"), {
+				404: toResponseConfig(Schemas.ErrorSchemas.notFound, {
 					description: "User not found",
 				}),
-				500: toResponseConfig(Schemas.toErrorSchema("Internal server error"), {
+				500: toResponseConfig(Schemas.ErrorSchemas.internalError, {
 					description: "Internal server error",
 				}),
 			},
@@ -254,10 +254,10 @@ function createRegistry() {
 						},
 					},
 				},
-				404: toResponseConfig(Schemas.toErrorSchema("User not found"), {
+				404: toResponseConfig(Schemas.ErrorSchemas.notFound, {
 					description: "User not found",
 				}),
-				500: toResponseConfig(Schemas.toErrorSchema("Internal server error"), {
+				500: toResponseConfig(Schemas.ErrorSchemas.internalError, {
 					description: "Internal server error",
 				}),
 			},

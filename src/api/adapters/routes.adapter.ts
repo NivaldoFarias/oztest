@@ -1,13 +1,22 @@
 import type { FastifyInstance } from "fastify";
 
-import type { CreateUserBody, GetUsersQuery, UpdateUserBody, UserParams } from "@/schemas";
+import type {
+	CreateUserBody,
+	GetUsersQuery,
+	RegenerateApiKeyResponse,
+	UpdateUserBody,
+	UserParams,
+} from "@/schemas";
 
+import { createAuthMiddleware, regenerateApiKey } from "@/auth";
 import {
 	CreateUserBodySchema,
+	CreateUserResponseSchema,
 	DeleteUserResponseSchema,
+	ErrorSchemas,
 	GetUsersQuerySchema,
 	GetUsersResponseSchema,
-	toErrorSchema,
+	RegenerateApiKeyResponseSchema,
 	UpdateUserBodySchema,
 	UpdateUserResponseSchema,
 	UserParamsSchema,
@@ -15,6 +24,11 @@ import {
 } from "@/schemas";
 
 import { createUser, deleteUser, getUserById, getUsers, updateUser } from "./handlers.adapter";
+
+/**
+ * Routes that are public and don't require authentication
+ */
+const PUBLIC_ROUTES = ["/docs", "/documentation", "/users"];
 
 /**
  * Configures API routes for the Fastify server instance.
@@ -28,6 +42,15 @@ import { createUser, deleteUser, getUserById, getUsers, updateUser } from "./han
  * ```
  */
 export function setupRoutes(app: FastifyInstance) {
+	// Set up authentication middleware with public routes
+	app.addHook(
+		"onRequest",
+		createAuthMiddleware(app, {
+			publicRoutes: PUBLIC_ROUTES,
+		}),
+	);
+
+	// Register user routes
 	app.get<{ Querystring: GetUsersQuery }>(
 		"/users",
 		{
@@ -39,8 +62,8 @@ export function setupRoutes(app: FastifyInstance) {
 						description: "No content",
 						type: "null",
 					},
-					400: toErrorSchema("Bad request"),
-					500: toErrorSchema("Internal server error"),
+					400: ErrorSchemas.badRequest,
+					500: ErrorSchemas.internalError,
 				},
 			},
 		},
@@ -53,9 +76,9 @@ export function setupRoutes(app: FastifyInstance) {
 			schema: {
 				body: CreateUserBodySchema,
 				response: {
-					201: UserSchema,
-					400: toErrorSchema("Bad request"),
-					500: toErrorSchema("Internal server error"),
+					201: CreateUserResponseSchema,
+					400: ErrorSchemas.badRequest,
+					500: ErrorSchemas.internalError,
 				},
 			},
 		},
@@ -69,9 +92,9 @@ export function setupRoutes(app: FastifyInstance) {
 				params: UserParamsSchema,
 				response: {
 					200: UserSchema,
-					400: toErrorSchema("Bad request"),
-					404: toErrorSchema("User not found"),
-					500: toErrorSchema("Internal server error"),
+					400: ErrorSchemas.badRequest,
+					404: ErrorSchemas.notFound,
+					500: ErrorSchemas.internalError,
 				},
 			},
 		},
@@ -86,8 +109,8 @@ export function setupRoutes(app: FastifyInstance) {
 				body: UpdateUserBodySchema,
 				response: {
 					200: UpdateUserResponseSchema,
-					404: toErrorSchema("User not found"),
-					500: toErrorSchema("Internal server error"),
+					404: ErrorSchemas.notFound,
+					500: ErrorSchemas.internalError,
 				},
 			},
 		},
@@ -101,11 +124,27 @@ export function setupRoutes(app: FastifyInstance) {
 				params: UserParamsSchema,
 				response: {
 					200: DeleteUserResponseSchema,
-					404: toErrorSchema("User not found"),
-					500: toErrorSchema("Internal server error"),
+					404: ErrorSchemas.notFound,
+					500: ErrorSchemas.internalError,
 				},
 			},
 		},
 		(request) => deleteUser(request, app),
+	);
+
+	// API key management routes
+	app.post<{ Reply: RegenerateApiKeyResponse }>(
+		"/auth/regenerate-key",
+		{
+			schema: {
+				response: {
+					200: RegenerateApiKeyResponseSchema,
+					401: ErrorSchemas.unauthorized,
+					404: ErrorSchemas.notFound,
+					500: ErrorSchemas.internalError,
+				},
+			},
+		},
+		(request) => regenerateApiKey(request, app),
 	);
 }

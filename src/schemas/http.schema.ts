@@ -2,11 +2,19 @@ import type { ResponseConfig } from "@asteasolutions/zod-to-openapi";
 
 import { z } from "@/config/zod.config";
 
-declare type Method = "get" | "post" | "put" | "delete" | "patch" | "head" | "options" | "trace";
-
-declare interface ResponsesConfig {
-	[statusCode: number | string]: ResponseConfig;
-}
+/**
+ * Standard error description constants to ensure consistency across the application.
+ * These should be used when creating error schemas to maintain uniform error messaging.
+ */
+export const ERROR_DESCRIPTIONS = {
+	BAD_REQUEST: "Bad request",
+	UNAUTHORIZED: "Unauthorized",
+	FORBIDDEN: "Forbidden",
+	NOT_FOUND: "Resource not found",
+	CONFLICT: "Resource conflict",
+	INTERNAL_ERROR: "Internal server error",
+	SERVICE_UNAVAILABLE: "Service unavailable",
+} as const;
 
 /**
  * Creates a Zod + OpenAPI response config for a given model and method.
@@ -43,41 +51,28 @@ export function toErrorSchema(message: string) {
 }
 
 /**
- * Creates a Zod + OpenAPI schema for a no content response.
+ * Creates a generic error response schema that accepts any error message.
  *
- * @returns A Zod schema for a no content response
+ * @param description Documentation description for this error type
+ * @returns A Zod schema for error responses with flexible message field
  */
-export function toNoContentSchema() {
+export function createErrorSchema(description = "Error response") {
 	return z
 		.object({
-			statusCode: z.number().openapi({ description: "The HTTP status code" }),
+			statusCode: z.number().openapi({ description: "HTTP status code" }),
+			error: z.string().openapi({ description: "Error type" }),
+			message: z.string().openapi({
+				description: "Detailed error message",
+				example: description,
+			}),
 		})
-		.openapi({ description: "The no content response" });
+		.openapi({ description });
 }
 
-/**
- * Creates a Zod + OpenAPI schema for a bad request response.
- *
- * @returns A Zod schema for a bad request response
- */
-export function toBadRequestSchema() {
-	return z
-		.object({
-			statusCode: z.number().openapi({ description: "The HTTP status code" }),
-			message: z.string().openapi({ description: "The error message" }),
-		})
-		.openapi({ description: "The bad request response" });
-}
-
-/**
- * Creates a Zod + OpenAPI schema for a success response.
- *
- * @returns A Zod schema for a success response
- */
-export function toSuccessSchema() {
-	return z
-		.object({
-			statusCode: z.number().openapi({ description: "The HTTP status code" }),
-		})
-		.openapi({ description: "The success response" });
-}
+// Reusable error schemas for common status codes
+export const ErrorSchemas = {
+	badRequest: createErrorSchema(ERROR_DESCRIPTIONS.BAD_REQUEST),
+	unauthorized: createErrorSchema(ERROR_DESCRIPTIONS.UNAUTHORIZED),
+	notFound: createErrorSchema(ERROR_DESCRIPTIONS.NOT_FOUND),
+	internalError: createErrorSchema(ERROR_DESCRIPTIONS.INTERNAL_ERROR),
+};
