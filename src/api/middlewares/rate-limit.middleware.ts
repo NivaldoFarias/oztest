@@ -40,19 +40,17 @@ export async function setupRateLimiting(
 ): Promise<void> {
 	const {
 		max = 20,
-		timeWindow = 60000, // 1 minute
+		timeWindow = 60_000,
 		errorMessage = "Rate limit exceeded, please try again later",
 		routes = [],
 	} = options;
 
-	// Register global rate limit with higher limits for general protection
 	await app.register(fastifyRateLimit, {
 		max: 100,
-		timeWindow: 60000,
+		timeWindow: 60_000,
 		allowList: ["127.0.0.1", "::1"],
 	});
 
-	// Register stricter rate limit for specific authentication routes if provided
 	if (routes.length > 0) {
 		for (const route of routes) {
 			await app.register(
@@ -64,7 +62,6 @@ export async function setupRateLimiting(
 							statusCode: 429,
 							message: errorMessage,
 						}),
-						// Log failed attempts
 						onExceeding: (req) => {
 							app.log.warn(`Rate limit approaching for ${req.ip} on ${req.url}`);
 						},

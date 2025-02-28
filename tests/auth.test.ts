@@ -5,32 +5,32 @@ import type { FastifyInstance } from "fastify";
 
 import { UserModel } from "@/models";
 
-import { ApiKeyService } from "./api-key.service";
-import { createAuthMiddleware } from "./auth.middleware";
+import { createAuthMiddleware } from "../src/api/middlewares/auth.middleware";
+import { ApiKeyUtil } from "../src/utils/api-key.util";
 
 describe("Authentication System", () => {
 	describe("ApiKeyService", () => {
 		test("generates secure API keys", () => {
-			const apiKey = ApiKeyService.generate();
+			const apiKey = ApiKeyUtil.generate();
 			expect(apiKey).toBeString();
 			expect(apiKey.length).toBeGreaterThanOrEqual(32);
 		});
 
 		test("hashes API keys consistently", () => {
 			const apiKey = "test-api-key";
-			const hash1 = ApiKeyService.hash(apiKey);
-			const hash2 = ApiKeyService.hash(apiKey);
+			const hash1 = ApiKeyUtil.hash(apiKey);
+			const hash2 = ApiKeyUtil.hash(apiKey);
 
 			expect(hash1).toEqual(hash2);
 			expect(hash1).not.toEqual(apiKey);
 		});
 
 		test("verifies API keys correctly", () => {
-			const apiKey = ApiKeyService.generate();
-			const hashedKey = ApiKeyService.hash(apiKey);
+			const apiKey = ApiKeyUtil.generate();
+			const hashedKey = ApiKeyUtil.hash(apiKey);
 
-			expect(ApiKeyService.verify(apiKey, hashedKey)).toBeTrue();
-			expect(ApiKeyService.verify("wrong-key", hashedKey)).toBeFalse();
+			expect(ApiKeyUtil.verify(apiKey, hashedKey)).toBeTrue();
+			expect(ApiKeyUtil.verify("wrong-key", hashedKey)).toBeFalse();
 		});
 	});
 
@@ -61,8 +61,8 @@ describe("Authentication System", () => {
 			app.addHook("onRequest", authMiddleware);
 
 			// Create test user with API key
-			testApiKey = ApiKeyService.generate();
-			hashedApiKey = ApiKeyService.hash(testApiKey);
+			testApiKey = ApiKeyUtil.generate();
+			hashedApiKey = ApiKeyUtil.hash(testApiKey);
 
 			// Mock UserModel and find method
 			UserModel.find = async () => {

@@ -1,5 +1,6 @@
 import { OpenAPIRegistry } from "@asteasolutions/zod-to-openapi";
 
+import { z } from "@/config/zod.config";
 import { toResponseConfig } from "@/utils/";
 
 import * as Schemas from "../schemas/";
@@ -15,6 +16,7 @@ function createRegistry() {
 
 	registerCommonSchemas();
 	registerUserSchemas();
+	registerRegionSchemas();
 	registerRoutes();
 
 	return registry;
@@ -104,6 +106,61 @@ function createRegistry() {
 			"DeleteUserResponse",
 			Schemas.DeleteUserResponseSchema.openapi({
 				description: "Response for user deletion operations",
+			}),
+		);
+	}
+
+	/**
+	 * Registers region-related schemas for OpenAPI documentation.
+	 * Includes request/response schemas for region operations.
+	 */
+	function registerRegionSchemas() {
+		registry.register(
+			"RegionParams",
+			Schemas.RegionParamsSchema.openapi({
+				description: "URL parameters for region-specific operations",
+			}),
+		);
+
+		registry.register(
+			"CreateRegionBody",
+			Schemas.CreateRegionBodySchema.openapi({
+				description: "Request body for region creation operations",
+			}),
+		);
+
+		registry.register(
+			"UpdateRegionBody",
+			Schemas.UpdateRegionBodySchema.openapi({
+				description: "Request body for region update operations",
+			}),
+		);
+
+		registry.register(
+			"Region",
+			Schemas.RegionSchema.openapi({
+				description: "Region object",
+			}),
+		);
+
+		registry.register(
+			"GetRegionsResponse",
+			Schemas.GetRegionsResponseSchema.openapi({
+				description: "Response for region listing",
+			}),
+		);
+
+		registry.register(
+			"UpdateRegionResponse",
+			Schemas.UpdateRegionResponseSchema.openapi({
+				description: "Response for region update operations",
+			}),
+		);
+
+		registry.register(
+			"DeleteRegionResponse",
+			Schemas.DeleteRegionResponseSchema.openapi({
+				description: "Response for region deletion operations",
 			}),
 		);
 	}
@@ -284,6 +341,178 @@ function createRegistry() {
 					content: {
 						"application/json": {
 							schema: Schemas.RegenerateApiKeyResponseSchema,
+						},
+					},
+				},
+				400: genericResponses[400],
+				401: genericResponses[401],
+				404: genericResponses[404],
+				500: genericResponses[500],
+				503: genericResponses[503],
+			},
+		});
+
+		// Region routes
+		registry.registerPath({
+			method: "get",
+			path: "/regions",
+			description: "Get a paginated list of regions",
+			tags: ["regions"],
+			request: {
+				query: Schemas.GetUsersQuerySchema,
+				headers: Schemas.HeadersSchema,
+			},
+			responses: {
+				200: {
+					description: "List of regions with pagination data",
+					content: {
+						"application/json": {
+							schema: Schemas.GetRegionsResponseSchema,
+						},
+					},
+				},
+				400: genericResponses[400],
+				401: genericResponses[401],
+				500: genericResponses[500],
+				503: genericResponses[503],
+			},
+		});
+
+		registry.registerPath({
+			method: "get",
+			path: "/users/{userId}/regions",
+			description: "Get a paginated list of regions for a specific user",
+			tags: ["regions", "users"],
+			request: {
+				params: Schemas.UserParamsSchema,
+				query: Schemas.GetUsersQuerySchema,
+				headers: Schemas.HeadersSchema,
+			},
+			responses: {
+				200: {
+					description: "List of regions with pagination data",
+					content: {
+						"application/json": {
+							schema: Schemas.GetRegionsResponseSchema,
+						},
+					},
+				},
+				400: genericResponses[400],
+				401: genericResponses[401],
+				404: genericResponses[404],
+				500: genericResponses[500],
+				503: genericResponses[503],
+			},
+		});
+
+		registry.registerPath({
+			method: "post",
+			path: "/users/{userId}/regions",
+			description: "Create a new region for a specific user",
+			tags: ["regions", "users"],
+			request: {
+				params: Schemas.UserParamsSchema,
+				body: {
+					description: "The region to create",
+					content: {
+						"application/json": {
+							schema: Schemas.CreateRegionBodySchema,
+						},
+					},
+				},
+				headers: Schemas.HeadersSchema,
+			},
+			responses: {
+				201: {
+					description: "The created region",
+					content: {
+						"application/json": {
+							schema: Schemas.RegionSchema,
+						},
+					},
+				},
+				400: genericResponses[400],
+				401: genericResponses[401],
+				404: genericResponses[404],
+				500: genericResponses[500],
+				503: genericResponses[503],
+			},
+		});
+
+		registry.registerPath({
+			method: "get",
+			path: "/regions/{id}",
+			description: "Get a region by ID",
+			tags: ["regions"],
+			request: {
+				params: Schemas.RegionParamsSchema,
+				headers: Schemas.HeadersSchema,
+			},
+			responses: {
+				200: {
+					description: "Region details",
+					content: {
+						"application/json": {
+							schema: Schemas.RegionSchema,
+						},
+					},
+				},
+				400: genericResponses[400],
+				401: genericResponses[401],
+				404: genericResponses[404],
+				500: genericResponses[500],
+				503: genericResponses[503],
+			},
+		});
+
+		registry.registerPath({
+			method: "put",
+			path: "/regions/{id}",
+			description: "Update a region by ID",
+			tags: ["regions"],
+			request: {
+				params: Schemas.RegionParamsSchema,
+				body: {
+					content: {
+						"application/json": {
+							schema: Schemas.UpdateRegionBodySchema,
+						},
+					},
+				},
+				headers: Schemas.HeadersSchema,
+			},
+			responses: {
+				200: {
+					description: "Region updated successfully",
+					content: {
+						"application/json": {
+							schema: Schemas.UpdateRegionResponseSchema,
+						},
+					},
+				},
+				400: genericResponses[400],
+				401: genericResponses[401],
+				404: genericResponses[404],
+				500: genericResponses[500],
+				503: genericResponses[503],
+			},
+		});
+
+		registry.registerPath({
+			method: "delete",
+			path: "/regions/{id}",
+			description: "Delete a region by ID",
+			tags: ["regions"],
+			request: {
+				params: Schemas.RegionParamsSchema,
+				headers: Schemas.HeadersSchema,
+			},
+			responses: {
+				200: {
+					description: "Region deleted successfully",
+					content: {
+						"application/json": {
+							schema: Schemas.DeleteRegionResponseSchema,
 						},
 					},
 				},

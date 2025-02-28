@@ -1,9 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 
 import { UserModel } from "@/models";
-import { AppError, InternalServerError, NotFoundError } from "@/utils/";
-
-import { ApiKeyService } from "./api-key.service";
+import { ApiKeyUtil, AppError, InternalServerError, NotFoundError } from "@/utils/";
 
 /**
  * Regenerates an API key for the authenticated user
@@ -24,8 +22,8 @@ export async function regenerateApiKey(request: FastifyRequest, app: FastifyInst
 	try {
 		const userId = request.user._id;
 
-		const newApiKey = ApiKeyService.generate();
-		const apiKeyHash = ApiKeyService.hash(newApiKey);
+		const newApiKey = ApiKeyUtil.generate();
+		const apiKeyHash = ApiKeyUtil.hash(newApiKey);
 
 		const user = await UserModel.findByIdAndUpdate(userId, { apiKeyHash }, { new: true });
 

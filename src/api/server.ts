@@ -1,6 +1,7 @@
-import { setupPlugins, setupRoutes } from "@/api/adapters/";
+import { setupPlugins } from "@/api/adapters/plugins.adapter";
+import { setupRateLimiting } from "@/api/middlewares/rate-limit.middleware";
+import { setupRoutes } from "@/api/routes/";
 import { ServerBase } from "@/api/server.base";
-import { setupRateLimiting } from "@/auth/rate-limit.middleware";
 
 /**
  * Main server implementation extending the base server with Fastify-specific configurations.
@@ -11,11 +12,10 @@ class Server extends ServerBase {
 	protected async setupPlugins() {
 		await setupPlugins(this.app);
 
-		// Configure rate limiting for authentication-sensitive endpoints
 		await setupRateLimiting(this.app, {
-			max: 10, // Maximum 10 attempts
-			timeWindow: 60 * 1000, // Per minute
-			routes: ["/auth", "/users"], // Apply to authentication endpoints
+			max: 10,
+			timeWindow: 60_000,
+			routes: ["/auth", "/users"],
 			errorMessage: "Too many authentication attempts, please try again later",
 		});
 	}

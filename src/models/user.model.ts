@@ -5,7 +5,7 @@ import { pre, getModelForClass, prop, modelOptions } from "@typegoose/typegoose"
 import { GeoCoding } from "@/utils/";
 import { Base } from "@/models/base.model";
 import type { Region } from "@/models/region.model";
-import { ApiKeyService } from "@/auth/api-key.service";
+import { ApiKeyUtil } from "@/utils/api-key.util";
 
 /** User model representing application users with location data */
 @pre<User>("save", async function (next) {
@@ -55,7 +55,7 @@ export class User extends Base {
 	 * ```
 	 */
 	public verifyApiKey(this: DocumentType<User>, apiKey: string): boolean {
-		return ApiKeyService.verify(apiKey, this.apiKeyHash);
+		return ApiKeyUtil.verify(apiKey, this.apiKeyHash);
 	}
 }
 

@@ -4,7 +4,6 @@ import type { FastifyInstance, FastifyRequest } from "fastify";
 
 import type { CreateUserBody, GetUsersQuery, UpdateUserBody, UserParams } from "@/schemas";
 
-import { ApiKeyService } from "@/auth/api-key.service";
 import { UserModel } from "@/models";
 import {
 	AppError,
@@ -15,6 +14,7 @@ import {
 	NotFoundError,
 	STATUS,
 } from "@/utils/";
+import { ApiKeyUtil } from "@/utils/api-key.util";
 
 /**
  * Retrieves a paginated list of users with optional pagination parameters.
@@ -68,8 +68,8 @@ export async function createUser(
 	try {
 		const userData = request.body;
 
-		const apiKey = ApiKeyService.generate();
-		const apiKeyHash = ApiKeyService.hash(apiKey);
+		const apiKey = ApiKeyUtil.generate();
+		const apiKeyHash = ApiKeyUtil.hash(apiKey);
 
 		const user = new UserModel({
 			...userData,

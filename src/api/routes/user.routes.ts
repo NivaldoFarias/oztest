@@ -1,14 +1,14 @@
 import type { FastifyInstance } from "fastify";
 
-import type {
-	CreateUserBody,
-	GetUsersQuery,
-	RegenerateApiKeyResponse,
-	UpdateUserBody,
-	UserParams,
-} from "@/schemas";
+import type { CreateUserBody, GetUsersQuery, UpdateUserBody, UserParams } from "@/schemas";
 
-import { createAuthMiddleware, regenerateApiKey } from "@/auth";
+import {
+	createUser,
+	deleteUser,
+	getUserById,
+	getUsers,
+	updateUser,
+} from "@/api/controllers/user.controller";
 import {
 	CreateUserBodySchema,
 	CreateUserResponseSchema,
@@ -16,15 +16,11 @@ import {
 	ErrorSchemas,
 	GetUsersQuerySchema,
 	GetUsersResponseSchema,
-	RegenerateApiKeyResponseSchema,
 	UpdateUserBodySchema,
 	UpdateUserResponseSchema,
 	UserParamsSchema,
 	UserSchema,
 } from "@/schemas";
-import { PUBLIC_ROUTES } from "@/utils/constants.util";
-
-import { createUser, deleteUser, getUserById, getUsers, updateUser } from "./handlers.adapter";
 
 /**
  * Configures API routes for the Fastify server instance.
@@ -37,9 +33,7 @@ import { createUser, deleteUser, getUserById, getUsers, updateUser } from "./han
  * await setupRoutes(fastifyApp);
  * ```
  */
-export function setupRoutes(app: FastifyInstance) {
-	app.addHook("onRequest", createAuthMiddleware(app, { publicRoutes: PUBLIC_ROUTES }));
-
+export function setupUserRoutes(app: FastifyInstance) {
 	app.get<{ Querystring: GetUsersQuery }>(
 		"/users",
 		{
@@ -128,21 +122,5 @@ export function setupRoutes(app: FastifyInstance) {
 			},
 		},
 		(request) => deleteUser(request, app),
-	);
-
-	app.post<{ Reply: RegenerateApiKeyResponse }>(
-		"/auth/regenerate-key",
-		{
-			schema: {
-				response: {
-					200: RegenerateApiKeyResponseSchema,
-					400: ErrorSchemas.badRequest,
-					401: ErrorSchemas.unauthorized,
-					404: ErrorSchemas.notFound,
-					500: ErrorSchemas.internalError,
-				},
-			},
-		},
-		(request) => regenerateApiKey(request, app),
 	);
 }

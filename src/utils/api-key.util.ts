@@ -4,7 +4,7 @@ import crypto from "crypto";
  * Service responsible for API key generation, hashing, and verification
  * This class provides utilities for creating secure API keys and validating them
  */
-export class ApiKeyService {
+export class ApiKeyUtil {
 	/**
 	 * Generates a secure random API key with high entropy
 	 * Creates a 48-character random string in hexadecimal format
