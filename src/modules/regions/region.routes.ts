@@ -9,6 +9,7 @@ import type {
 } from "@/modules/regions/region.schema";
 import type { GetUsersQuery } from "@/modules/users/user.schema";
 
+import { ErrorSchemas } from "@/core/errors/error.schema";
 import {
 	createRegion,
 	deleteRegion,
@@ -27,7 +28,6 @@ import {
 	UpdateRegionResponseSchema,
 } from "@/modules/regions/region.schema";
 import { GetUsersQuerySchema } from "@/modules/users/user.schema";
-import { ErrorSchemas } from "@/schemas";
 
 export function setupRegionRoutes(app: FastifyInstance) {
 	app.get<{ Querystring: GetUsersQuery }>(

@@ -9,7 +9,6 @@ import type {
 	UserParams,
 } from "@/modules/users/user.schema";
 
-import { UserModel } from "@/modules/users/user.model";
 import {
 	AppError,
 	BadRequestError,
@@ -18,8 +17,9 @@ import {
 	GeoCoding,
 	NotFoundError,
 	STATUS,
-} from "@/utils/";
-import { ApiKeyUtil } from "@/utils/api-key.util";
+} from "@/core/utils";
+import { ApiKeyUtil } from "@/core/utils/api-key.util";
+import { UserModel } from "@/modules/users/user.model";
 
 /**
  * Retrieves a paginated list of users with optional pagination parameters.

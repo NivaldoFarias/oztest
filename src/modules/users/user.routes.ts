@@ -7,6 +7,7 @@ import type {
 	UserParams,
 } from "@/modules/users/user.schema";
 
+import { ErrorSchemas } from "@/core/errors/error.schema";
 import {
 	createUser,
 	deleteUser,
@@ -25,7 +26,6 @@ import {
 	UserParamsSchema,
 	UserSchema,
 } from "@/modules/users/user.schema";
-import { ErrorSchemas } from "@/schemas";
 
 /**
  * Configures API routes for the Fastify server instance.

@@ -2,11 +2,11 @@ import { faker } from "@faker-js/faker";
 import { afterAll, afterEach, beforeAll, beforeEach, mock } from "bun:test";
 import mongoose from "mongoose";
 
-import "@/database";
+import "@/core/database/database";
 
-import server from "@/api/server";
+import server from "@/core/server/server";
+import { GeoCoding } from "@/core/utils/geocoding.util";
 import { UserModel } from "@/modules/users/user.model";
-import { GeoCoding } from "@/utils/geocoding.util";
 
 /**
  * Creates a test session and mocks external dependencies

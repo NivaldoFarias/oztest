@@ -9,9 +9,9 @@ import type {
 } from "@/modules/regions/region.schema";
 import type { GetUsersQuery } from "@/modules/users/user.schema";
 
+import { AppError, BadRequestError, NotFoundError, STATUS } from "@/core/utils";
 import { RegionModel } from "@/modules/regions/region.model";
 import { UserModel } from "@/modules/users/user.model";
-import { AppError, BadRequestError, NotFoundError, STATUS } from "@/utils/";
 
 /**
  * Retrieves a paginated list of regions with optional pagination parameters.

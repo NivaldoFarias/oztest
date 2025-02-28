@@ -1,6 +1,6 @@
-import { z } from "@/config/zod.config";
+import { z } from "@/core/config/zod.config";
 import * as examples from "@/modules/regions/region.examples";
-import { CoordinatesSchema } from "@/shared/common.schema";
+import { CoordinatesSchema } from "@/shared/schemas/common.schema";
 
 export const RegionParamsSchema = z
 	.object({

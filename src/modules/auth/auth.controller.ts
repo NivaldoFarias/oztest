@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 
+import { ApiKeyUtil, AppError, InternalServerError, NotFoundError } from "@/core/utils";
 import { UserModel } from "@/modules/users/user.model";
-import { ApiKeyUtil, AppError, InternalServerError, NotFoundError } from "@/utils/";
 
 /**
  * Regenerates an API key for the authenticated user

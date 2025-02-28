@@ -1,6 +1,6 @@
-import { z } from "@/config/zod.config";
-import { ErrorSchemas } from "@/schemas/error.schema";
-import { toResponseConfig } from "@/utils/";
+import { z } from "@/core/config/zod.config";
+import { ErrorSchemas } from "@/core/errors/error.schema";
+import { toResponseConfig } from "@/core/utils";
 
 /**
  * Common pagination parameters used across list endpoints.

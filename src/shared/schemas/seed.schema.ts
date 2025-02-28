@@ -1,4 +1,4 @@
-import { z } from "@/config/zod.config";
+import { z } from "@/core/config/zod.config";
 
 /** Schema for seeding options validation */
 export const seedOptionsSchema = z.object({

@@ -1,7 +1,7 @@
 import type { OpenAPIRegistry } from "@asteasolutions/zod-to-openapi";
 
 import * as UserSchemas from "@/modules/users/user.schema";
-import { genericResponses, HeadersSchema } from "@/shared/common.schema";
+import { genericResponses, HeadersSchema } from "@/shared/schemas/common.schema";
 
 /**
  * Registers user-related schemas for OpenAPI documentation.

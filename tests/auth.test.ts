@@ -5,8 +5,8 @@ import type { FastifyInstance } from "fastify";
 
 import { UserModel } from "@/modules/users/user.model";
 
-import { createAuthMiddleware } from "../src/modules/auth/auth.middleware";
-import { ApiKeyUtil } from "../src/utils/api-key.util";
+import { createAuthMiddleware } from "../src/api/middlewares/auth.middleware";
+import { ApiKeyUtil } from "../src/core/utils/api-key.util";
 
 describe("Authentication System", () => {
 	describe("ApiKeyService", () => {

@@ -1,6 +1,6 @@
 import { setupPlugins } from "@/api/adapters/plugins.adapter";
 import { setupRateLimiting } from "@/api/middlewares/rate-limit.middleware";
-import { setupRoutes } from "@/api/routes/";
+import { setupRoutes } from "@/api/routes";
 import { ServerBase } from "@/api/server.base";
 
 /**

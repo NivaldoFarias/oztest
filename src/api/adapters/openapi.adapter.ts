@@ -6,8 +6,8 @@ import scalarReference from "@scalar/fastify-api-reference";
 
 import type { FastifyInstance } from "fastify";
 
-import { registry } from "@/config/registry.config";
-import { env } from "@/utils/";
+import { registry } from "@/core/config/registry.config";
+import { env } from "@/core/utils";
 
 import pkgJson from "../../../package.json";
 

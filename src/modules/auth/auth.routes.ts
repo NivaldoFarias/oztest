@@ -2,9 +2,9 @@ import type { FastifyInstance } from "fastify";
 
 import type { RegenerateApiKeyResponse } from "@/modules/auth/auth.schema";
 
+import { ErrorSchemas } from "@/core/errors/error.schema";
 import { regenerateApiKey } from "@/modules/auth/auth.controller";
 import { RegenerateApiKeyResponseSchema } from "@/modules/auth/auth.schema";
-import { ErrorSchemas } from "@/schemas";
 
 /**
  * Configures API routes for the Fastify server instance.

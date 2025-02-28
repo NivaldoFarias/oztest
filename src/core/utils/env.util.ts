@@ -1,4 +1,4 @@
-import { z } from "@/config/zod.config";
+import { z } from "@/core/config/zod.config";
 
 /**
  * Environment configuration schema for runtime validation.

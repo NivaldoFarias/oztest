@@ -2,10 +2,10 @@ import type { Ref, DocumentType } from "@typegoose/typegoose";
 
 import { pre, getModelForClass, prop, modelOptions } from "@typegoose/typegoose";
 
-import { GeoCoding } from "@/utils/";
-import { Base } from "@/shared/base.model";
+import { GeoCoding } from "@/core/utils";
+import { Base } from "@/shared/models/base.model";
 import type { Region } from "@/modules/regions/region.model";
-import { ApiKeyUtil } from "@/utils/api-key.util";
+import { ApiKeyUtil } from "@/core/utils/api-key.util";
 
 /** User model representing application users with location data */
 @pre<User>("save", async function (next) {

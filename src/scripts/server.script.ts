@@ -1,4 +1,4 @@
-import server from "@/api/server";
+import server from "@/core/server/server";
 
 if (import.meta.main) {
 	let isShutdown = false;

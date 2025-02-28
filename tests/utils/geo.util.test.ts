@@ -3,7 +3,7 @@ import { describe, expect, it } from "bun:test";
 
 import type { GeocodeResult } from "@googlemaps/google-maps-services-js";
 
-import { GeoCodingUtil } from "@/utils/";
+import { GeoCodingUtil } from "@/core/utils";
 
 import mockLocation from "@tests/mocks/location.mock.json";
 

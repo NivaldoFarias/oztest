@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
+import { InternalServerError, UnauthorizedError } from "@/core/utils";
 import { UserModel } from "@/modules/users/user.model";
-import { InternalServerError, UnauthorizedError } from "@/utils";
 
 /**
  * Configuration options for the authentication middleware

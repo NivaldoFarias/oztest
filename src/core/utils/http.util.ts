@@ -1,6 +1,6 @@
 import type { ResponseConfig } from "@asteasolutions/zod-to-openapi";
 
-import { z } from "@/config/zod.config";
+import { z } from "@/core/config/zod.config";
 
 /**
  * Creates a Zod + OpenAPI response config for a given model and method.

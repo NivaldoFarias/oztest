@@ -1,7 +1,7 @@
 import type { OpenAPIRegistry } from "@asteasolutions/zod-to-openapi";
 
 import * as AuthSchemas from "@/modules/auth/auth.schema";
-import { genericResponses, HeadersSchema } from "@/shared/common.schema";
+import { genericResponses, HeadersSchema } from "@/shared/schemas/common.schema";
 
 /**
  * Registers authentication-related schemas for OpenAPI documentation.

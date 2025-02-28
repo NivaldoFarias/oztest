@@ -1,6 +1,6 @@
 import { ZodError } from "zod";
 
-import { z } from "@/config/zod.config";
+import { z } from "@/core/config/zod.config";
 
 function createErrorSchema(
 	name: string,

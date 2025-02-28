@@ -2,8 +2,8 @@ import Fastify from "fastify";
 
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 
-import { Database } from "@/database/";
-import { env } from "@/utils/";
+import { Database } from "@/core/database/database";
+import { env } from "@/core/utils";
 
 /**
  * Abstract base server class providing core HTTP server functionality.

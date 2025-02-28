@@ -3,7 +3,7 @@ import type { Ref } from "@typegoose/typegoose";
 
 import { pre, getModelForClass, prop, modelOptions, Severity } from "@typegoose/typegoose";
 
-import { Base } from "@/shared/base.model";
+import { Base } from "@/shared/models/base.model";
 import { UserModel } from "@/modules/users/user.model";
 
 import type { User } from "@/modules/users/user.model";

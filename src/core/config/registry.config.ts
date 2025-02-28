@@ -3,9 +3,7 @@ import { OpenAPIRegistry } from "@asteasolutions/zod-to-openapi";
 import { registerAuthRoutes, registerAuthSchemas } from "@/modules/auth/auth.docs";
 import { registerRegionRoutes, registerRegionSchemas } from "@/modules/regions/region.docs";
 import { registerUserRoutes, registerUserSchemas } from "@/modules/users/user.docs";
-import { genericResponses } from "@/shared/common.schema";
-
-import * as Schemas from "../schemas/";
+import * as Schemas from "@/shared/schemas/common.schema";
 
 export const registry = createRegistry();
 

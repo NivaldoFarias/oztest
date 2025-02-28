@@ -1,6 +1,6 @@
-import { Database } from "@/database/";
-import { DatabaseSeeder } from "@/database/seed";
-import { env } from "@/utils/";
+import { Database } from "@/core/database/database";
+import { DatabaseSeeder } from "@/core/database/seed";
+import { env } from "@/core/utils";
 
 if (import.meta.main) {
 	const seedOptions = {
