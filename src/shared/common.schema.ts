@@ -1,4 +1,6 @@
 import { z } from "@/config/zod.config";
+import { ErrorSchemas } from "@/schemas/error.schema";
+import { toResponseConfig } from "@/utils/";
 
 /**
  * Common pagination parameters used across list endpoints.
@@ -61,6 +63,19 @@ export const createPaginatedSchema = <T extends z.ZodType>(schema: T) =>
 export const HeadersSchema = z.object({
 	"x-api-key": z.string().openapi({ description: "The API key" }),
 });
+
+export const genericResponses = {
+	400: toResponseConfig(ErrorSchemas.badRequest, { description: "Bad request" }),
+	401: toResponseConfig(ErrorSchemas.unauthorized, { description: "Unauthorized" }),
+	404: toResponseConfig(ErrorSchemas.notFound, { description: "Not found" }),
+	409: toResponseConfig(ErrorSchemas.conflict, { description: "Conflict" }),
+	500: toResponseConfig(ErrorSchemas.internalError, {
+		description: "Internal server error",
+	}),
+	503: toResponseConfig(ErrorSchemas.serviceUnavailable, {
+		description: "Service unavailable",
+	}),
+};
 
 export type PaginationQuery = z.infer<typeof PaginationQuerySchema>;
 export type Coordinates = z.infer<typeof CoordinatesSchema>;

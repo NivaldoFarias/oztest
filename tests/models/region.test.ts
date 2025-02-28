@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker";
 import { describe, expect, it } from "bun:test";
 
-import { RegionModel } from "@/models";
+import { RegionModel } from "@/modules/regions/region.model";
 
 import { createTestUser } from "@tests/setup";
 

@@ -2,7 +2,12 @@ import { z } from "zod";
 
 import type { FastifyInstance } from "fastify";
 
-import type { CreateRegionBody, GetUsersQuery, RegionParams, UpdateRegionBody } from "@/schemas";
+import type {
+	CreateRegionBody,
+	RegionParams,
+	UpdateRegionBody,
+} from "@/modules/regions/region.schema";
+import type { GetUsersQuery } from "@/modules/users/user.schema";
 
 import {
 	createRegion,
@@ -11,8 +16,7 @@ import {
 	getRegions,
 	getUserRegions,
 	updateRegion,
-} from "@/api/controllers/region.controller";
-import { ErrorSchemas, GetUsersQuerySchema } from "@/schemas";
+} from "@/modules/regions/region.controller";
 import {
 	CreateRegionBodySchema,
 	DeleteRegionResponseSchema,
@@ -21,7 +25,9 @@ import {
 	RegionSchema,
 	UpdateRegionBodySchema,
 	UpdateRegionResponseSchema,
-} from "@/schemas/region.schema";
+} from "@/modules/regions/region.schema";
+import { GetUsersQuerySchema } from "@/modules/users/user.schema";
+import { ErrorSchemas } from "@/schemas";
 
 export function setupRegionRoutes(app: FastifyInstance) {
 	app.get<{ Querystring: GetUsersQuery }>(

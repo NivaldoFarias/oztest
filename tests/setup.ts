@@ -5,7 +5,7 @@ import mongoose from "mongoose";
 import "@/database";
 
 import server from "@/api/server";
-import { UserModel } from "@/models";
+import { UserModel } from "@/modules/users/user.model";
 import { GeoCoding } from "@/utils/geocoding.util";
 
 /**

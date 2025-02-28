@@ -109,9 +109,3 @@ export const createUserResponseExample = {
 	},
 	apiKey: `api_${faker.string.alphanumeric(24)}`,
 };
-
-/** Example of an API key regeneration response */
-export const regenerateApiKeyResponseExample = {
-	apiKey: `api_${faker.string.alphanumeric(24)}`,
-	message: "API key successfully regenerated",
-};

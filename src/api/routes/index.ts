@@ -1,11 +1,10 @@
 import type { FastifyInstance } from "fastify";
 
-import { createAuthMiddleware } from "@/api/middlewares/auth.middleware";
+import { createAuthMiddleware } from "@/modules/auth/auth.middleware";
+import { setupAuthRoutes } from "@/modules/auth/auth.routes";
+import { setupRegionRoutes } from "@/modules/regions/region.routes";
+import { setupUserRoutes } from "@/modules/users/user.routes";
 import { PUBLIC_ROUTES } from "@/utils/constants.util";
-
-import { setupAuthRoutes } from "../routes/auth.routes";
-import { setupRegionRoutes } from "../routes/region.routes";
-import { setupUserRoutes } from "../routes/user.routes";
 
 /**
  * Configures API routes for the Fastify server instance.

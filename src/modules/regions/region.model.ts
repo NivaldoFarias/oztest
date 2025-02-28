@@ -3,10 +3,10 @@ import type { Ref } from "@typegoose/typegoose";
 
 import { pre, getModelForClass, prop, modelOptions, Severity } from "@typegoose/typegoose";
 
-import { Base } from "@/models/base.model";
-import { UserModel } from "@/models/user.model";
+import { Base } from "@/shared/base.model";
+import { UserModel } from "@/modules/users/user.model";
 
-import type { User } from "@/models/user.model";
+import type { User } from "@/modules/users/user.model";
 
 /** Region model representing geographical areas owned by users */
 @pre<Region>("save", async function (next) {

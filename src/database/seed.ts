@@ -2,10 +2,11 @@ import { faker } from "@faker-js/faker";
 
 import type { ClientSession, Connection } from "mongoose";
 
-import type { SeedOptions } from "@/schemas/";
+import type { SeedOptions } from "@/schemas/seed.schema";
 
-import { RegionModel, UserModel } from "@/models";
-import { defaultSeedOptions, seedOptionsSchema } from "@/schemas/";
+import { RegionModel } from "@/modules/regions/region.model";
+import { UserModel } from "@/modules/users/user.model";
+import { defaultSeedOptions, seedOptionsSchema } from "@/schemas/seed.schema";
 import { GeoCoding, REGION_TEMPLATES } from "@/utils/";
 
 /** Represents a city */

@@ -1,6 +1,6 @@
 import { z } from "@/config/zod.config";
 
-import * as examples from "./examples/user.examples";
+import * as examples from "./user.examples";
 
 /**
  * Interface defining the structure of query parameters for user listing endpoints.
@@ -212,22 +212,6 @@ export const CreateUserResponseSchema = z
 	})
 	.openapi("CreateUserResponse");
 
-/**
- * Schema for API key regeneration response
- */
-export const RegenerateApiKeyResponseSchema = z
-	.object({
-		apiKey: z.string().openapi({
-			description: "The newly generated API key",
-			example: examples.regenerateApiKeyResponseExample.apiKey,
-		}),
-		message: z.string().openapi({
-			description: "Success message",
-			example: examples.regenerateApiKeyResponseExample.message,
-		}),
-	})
-	.openapi("RegenerateApiKeyResponse");
-
 export type GetUsersQuery = z.infer<typeof GetUsersQuerySchema>;
 export type UserParams = z.infer<typeof UserParamsSchema>;
 export type UpdateUserBody = z.infer<typeof UpdateUserBodySchema>;
@@ -237,4 +221,3 @@ export type User = z.infer<typeof UserSchema>;
 export type CreateUserBody = z.infer<typeof CreateUserBodySchema>;
 export type DeleteUserResponse = z.infer<typeof DeleteUserResponseSchema>;
 export type CreateUserResponse = z.infer<typeof CreateUserResponseSchema>;
-export type RegenerateApiKeyResponse = z.infer<typeof RegenerateApiKeyResponseSchema>;

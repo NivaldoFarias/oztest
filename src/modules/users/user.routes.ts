@@ -1,6 +1,11 @@
 import type { FastifyInstance } from "fastify";
 
-import type { CreateUserBody, GetUsersQuery, UpdateUserBody, UserParams } from "@/schemas";
+import type {
+	CreateUserBody,
+	GetUsersQuery,
+	UpdateUserBody,
+	UserParams,
+} from "@/modules/users/user.schema";
 
 import {
 	createUser,
@@ -8,19 +13,19 @@ import {
 	getUserById,
 	getUsers,
 	updateUser,
-} from "@/api/controllers/user.controller";
+} from "@/modules/users/user.controller";
 import {
 	CreateUserBodySchema,
 	CreateUserResponseSchema,
 	DeleteUserResponseSchema,
-	ErrorSchemas,
 	GetUsersQuerySchema,
 	GetUsersResponseSchema,
 	UpdateUserBodySchema,
 	UpdateUserResponseSchema,
 	UserParamsSchema,
 	UserSchema,
-} from "@/schemas";
+} from "@/modules/users/user.schema";
+import { ErrorSchemas } from "@/schemas";
 
 /**
  * Configures API routes for the Fastify server instance.

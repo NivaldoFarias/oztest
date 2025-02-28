@@ -3,8 +3,8 @@ import type { Ref, DocumentType } from "@typegoose/typegoose";
 import { pre, getModelForClass, prop, modelOptions } from "@typegoose/typegoose";
 
 import { GeoCoding } from "@/utils/";
-import { Base } from "@/models/base.model";
-import type { Region } from "@/models/region.model";
+import { Base } from "@/shared/base.model";
+import type { Region } from "@/modules/regions/region.model";
 import { ApiKeyUtil } from "@/utils/api-key.util";
 
 /** User model representing application users with location data */

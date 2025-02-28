@@ -3,9 +3,9 @@ import Fastify from "fastify";
 
 import type { FastifyInstance } from "fastify";
 
-import { UserModel } from "@/models";
+import { UserModel } from "@/modules/users/user.model";
 
-import { createAuthMiddleware } from "../src/api/middlewares/auth.middleware";
+import { createAuthMiddleware } from "../src/modules/auth/auth.middleware";
 import { ApiKeyUtil } from "../src/utils/api-key.util";
 
 describe("Authentication System", () => {

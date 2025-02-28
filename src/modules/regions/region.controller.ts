@@ -2,9 +2,15 @@ import { MongoServerError } from "mongodb";
 
 import type { FastifyInstance, FastifyRequest } from "fastify";
 
-import type { CreateRegionBody, GetUsersQuery, RegionParams, UpdateRegionBody } from "@/schemas";
+import type {
+	CreateRegionBody,
+	RegionParams,
+	UpdateRegionBody,
+} from "@/modules/regions/region.schema";
+import type { GetUsersQuery } from "@/modules/users/user.schema";
 
-import { RegionModel, UserModel } from "@/models";
+import { RegionModel } from "@/modules/regions/region.model";
+import { UserModel } from "@/modules/users/user.model";
 import { AppError, BadRequestError, NotFoundError, STATUS } from "@/utils/";
 
 /**

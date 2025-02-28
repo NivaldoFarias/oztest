@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
-import { UserModel } from "@/models";
+import { UserModel } from "@/modules/users/user.model";
 import { InternalServerError, UnauthorizedError } from "@/utils";
 
 /**

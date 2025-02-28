@@ -2,9 +2,14 @@ import { MongoServerError } from "mongodb";
 
 import type { FastifyInstance, FastifyRequest } from "fastify";
 
-import type { CreateUserBody, GetUsersQuery, UpdateUserBody, UserParams } from "@/schemas";
+import type {
+	CreateUserBody,
+	GetUsersQuery,
+	UpdateUserBody,
+	UserParams,
+} from "@/modules/users/user.schema";
 
-import { UserModel } from "@/models";
+import { UserModel } from "@/modules/users/user.model";
 import {
 	AppError,
 	BadRequestError,
