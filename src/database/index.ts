@@ -18,7 +18,6 @@ declare interface DatabaseState {
  * using Mongoose as the ODM (Object Document Mapper).
  */
 export class Database {
-	private readonly mongoURI: string;
 	private state: DatabaseState = {
 		connection: null,
 		status: "disconnected",
@@ -39,21 +38,16 @@ export class Database {
 	 * ```
 	 */
 	constructor(
-		baseUri: string,
+		private readonly mongoURI: string,
 		private readonly connectionOptions: ConnectOptions = {
 			directConnection: true,
-			retryWrites: true,
-			w: "majority",
-			readPreference: "primary",
 		},
 		private readonly retryStrategy = {
 			initialDelay: 1000,
 			maxDelay: 30000,
 			factor: 2,
 		},
-	) {
-		this.mongoURI = this.buildConnectionUri(baseUri);
-	}
+	) {}
 
 	/**
 	 * Initializes the database connection using the provided MongoDB URI.
@@ -77,19 +71,28 @@ export class Database {
 	 * }
 	 * ```
 	 */
-	public async initialize(connectionOptions: ConnectOptions = {}) {
-		if (this.state.status === "connecting") return null;
-		else if (this.state.status === "connected" && this.state.connection) {
-			return this.state.connection;
-		} else this.state.status = "connecting";
+	public async initialize(connectionOptions = this.connectionOptions) {
+		switch (this.state.status) {
+			case "connecting":
+				return null;
+			case "connected":
+				return this.state.connection;
+			case "error":
+				this.scheduleReconnect();
+				return null;
+			case "disconnected":
+			default:
+				this.state.status = "connecting";
+		}
 
 		try {
 			const { connection } = await mongoose.connect(this.mongoURI, connectionOptions);
 
+			console.log("📦 Connected to MongoDB");
+
 			this.state.connection = connection;
 			this.state.status = "connected";
 			this.state.retryCount = 0;
-			console.log("📦 Connected to MongoDB");
 
 			connection.on("disconnected", () => {
 				console.log("MongoDB disconnected, attempting to reconnect...");
@@ -97,8 +100,8 @@ export class Database {
 				this.scheduleReconnect();
 			});
 
-			connection.on("error", (err) => {
-				console.error("MongoDB connection error:", err);
+			connection.on("error", (error) => {
+				console.error("MongoDB connection error:", error);
 				this.state.status = "error";
 				this.scheduleReconnect();
 			});
@@ -131,7 +134,7 @@ export class Database {
 			console.log(
 				`Maximum retries (${this.state.maxRetries}) reached. Will continue retry attempts in the background.`,
 			);
-			// Reset retry count but continue trying
+
 			this.state.retryCount = 0;
 		}
 
@@ -147,7 +150,7 @@ export class Database {
 		this.state.retryTimeout = setTimeout(() => {
 			this.state.retryCount++;
 			console.log(`Attempting to reconnect to database (attempt ${this.state.retryCount})`);
-			this.initialize().catch(() => {}); // Catch to prevent unhandled promise rejection
+			this.initialize().catch(() => {});
 		}, delay);
 	}
 
@@ -180,53 +183,11 @@ export class Database {
 	}
 
 	/**
-	 * Verifies connection is to primary node and database is writable
+	 * Returns the current database state.
 	 *
-	 * @throws {Error} If not connected to primary or database is not writable
+	 * @returns The current database state
 	 */
-	private async verifyPrimaryConnection() {
-		if (!this.state.connection) throw new Error("Database connection not established");
-
-		const adminDb = this.state.connection.db.admin();
-
-		const { ismaster, primary, hosts } = await adminDb.command({ isMaster: 1 });
-
-		if (!ismaster) {
-			throw new Error(
-				`Not connected to primary node. Current primary: ${primary}. Available hosts: ${hosts.join(", ")}`,
-			);
-		}
-
-		try {
-			await this.state.connection.db.command({ ping: 1, writeConcern: { w: "majority" } });
-		} catch (error) {
-			if (error instanceof Error) {
-				throw new Error(`Database is not writable: ${error.message}`);
-			} else {
-				throw new Error("Database is not writable with unknown error");
-			}
-		}
-	}
-
-	/**
-	 * Constructs a MongoDB connection URI with proper options for primary node connection.
-	 *
-	 * Converts `ConnectOptions` to `Record<string,string>` for `URLSearchParams` compatibility.
-	 *
-	 * @param baseUri - Base MongoDB connection string
-	 */
-	private buildConnectionUri(baseUri: string) {
-		const stringParams = Object.entries(this.connectionOptions).reduce<Record<string, string>>(
-			(acc, [key, value]) => {
-				acc[key] = String(value);
-				return acc;
-			},
-			{},
-		);
-
-		const params = new URLSearchParams(stringParams);
-		const uri = `${baseUri}?${params}`;
-
-		return uri;
+	public getState() {
+		return this.state;
 	}
 }

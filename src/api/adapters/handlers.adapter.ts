@@ -6,8 +6,15 @@ import type { CreateUserBody, GetUsersQuery, UpdateUserBody, UserParams } from "
 
 import { ApiKeyService } from "@/auth/api-key.service";
 import { UserModel } from "@/models";
-import { AppError, BadRequestError, ConflictError, NotFoundError, STATUS } from "@/utils";
-import { GeoCodingSingleton } from "@/utils/geocoding.util";
+import {
+	AppError,
+	BadRequestError,
+	ConflictError,
+	ERROR_CODES,
+	GeoCoding,
+	NotFoundError,
+	STATUS,
+} from "@/utils/";
 
 /**
  * Retrieves a paginated list of users with optional pagination parameters.
@@ -65,7 +72,8 @@ export async function createUser(
 		// Handle address/coordinate conversion
 		if (userData.address && !userData.coordinates) {
 			try {
-				const locationData = await GeoCodingSingleton.getLocationFromAddress(userData.address);
+				const locationData = await GeoCoding.getLocationFromAddress(userData.address);
+
 				userData.coordinates = [
 					locationData.geometry.location.lng,
 					locationData.geometry.location.lat,
@@ -77,7 +85,7 @@ export async function createUser(
 			}
 		} else if (userData.coordinates && !userData.address) {
 			try {
-				const locationData = await GeoCodingSingleton.getLocationFromCoordinates({
+				const locationData = await GeoCoding.getLocationFromCoordinates({
 					lat: userData.coordinates[1],
 					lng: userData.coordinates[0],
 				});
@@ -89,7 +97,6 @@ export async function createUser(
 			}
 		}
 
-		// Generate a secure API key and its hash
 		const apiKey = ApiKeyService.generate();
 		const apiKeyHash = ApiKeyService.hash(apiKey);
 
@@ -101,27 +108,24 @@ export async function createUser(
 
 		await user.save();
 
-		// Return user object and API key (only returned once during creation)
-		return {
-			user: {
-				...user.toObject(),
-				regions: [],
-			},
-			apiKey,
-		};
+		return { user, apiKey };
 	} catch (error) {
 		if (error instanceof MongoServerError) {
 			if (error.code === 11000) {
 				throw new ConflictError("User with this email already exists");
+			} else if (error.codeName === "NotWritablePrimary" || error.code === 10107) {
+				throw new AppError(
+					"Database is currently in read-only mode. Please try again later.",
+					503,
+					ERROR_CODES.SERVICE_UNAVAILABLE,
+				);
 			}
-		}
 
-		// If error was already created by us, pass it through
-		if (error instanceof AppError) {
 			throw error;
 		}
 
-		throw new BadRequestError("Failed to create user");
+		if (error instanceof AppError) throw error;
+		else throw new BadRequestError("Failed to create user");
 	}
 }
 
@@ -182,7 +186,7 @@ export async function updateUser(
 	// Handle address/coordinate conversion
 	if (update.address && !update.coordinates) {
 		try {
-			const locationData = await GeoCodingSingleton.getLocationFromAddress(update.address);
+			const locationData = await GeoCoding.getLocationFromAddress(update.address);
 			update.coordinates = [locationData.geometry.location.lng, locationData.geometry.location.lat];
 		} catch (error) {
 			throw new BadRequestError(
@@ -191,7 +195,7 @@ export async function updateUser(
 		}
 	} else if (update.coordinates && !update.address) {
 		try {
-			const locationData = await GeoCodingSingleton.getLocationFromCoordinates({
+			const locationData = await GeoCoding.getLocationFromCoordinates({
 				lat: update.coordinates[1],
 				lng: update.coordinates[0],
 			});

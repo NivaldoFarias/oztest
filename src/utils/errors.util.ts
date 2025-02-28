@@ -1,4 +1,22 @@
-import { createBadRequestError, createErrorResponse } from "@/schemas/error.schema";
+export const ERROR_CODES = {
+	DATABASE_READ_ONLY: "DATABASE_READ_ONLY",
+	USER_ALREADY_EXISTS: "USER_ALREADY_EXISTS",
+	INVALID_ADDRESS: "INVALID_ADDRESS",
+	INVALID_COORDINATES: "INVALID_COORDINATES",
+	INVALID_API_KEY: "INVALID_API_KEY",
+	INVALID_REQUEST: "INVALID_REQUEST",
+	INTERNAL_SERVER_ERROR: "INTERNAL_SERVER_ERROR",
+	SERVICE_UNAVAILABLE: "SERVICE_UNAVAILABLE",
+	NOT_FOUND: "NOT_FOUND",
+	UNAUTHORIZED: "UNAUTHORIZED",
+	CONFLICT: "CONFLICT",
+	BAD_REQUEST: "BAD_REQUEST",
+	FORBIDDEN: "FORBIDDEN",
+	UNPROCESSABLE_ENTITY: "UNPROCESSABLE_ENTITY",
+	PAYLOAD_TOO_LARGE: "PAYLOAD_TOO_LARGE",
+	REQUEST_TIMEOUT: "REQUEST_TIMEOUT",
+	TOO_MANY_REQUESTS: "TOO_MANY_REQUESTS",
+} as const;
 
 /**
  * Base application error class that all custom errors will extend.
@@ -15,20 +33,11 @@ export class AppError extends Error {
 	constructor(
 		message: string,
 		public readonly statusCode: number,
-		public readonly code: string,
+		public readonly code: (typeof ERROR_CODES)[keyof typeof ERROR_CODES],
 	) {
 		super(message);
 		this.name = this.constructor.name;
 		Error.captureStackTrace(this, this.constructor);
-	}
-
-	/**
-	 * Converts the error to a response object matching the API's error schema.
-	 *
-	 * @returns Standardized error response object
-	 */
-	public toResponse() {
-		return createErrorResponse(this.statusCode, this.code, this.message);
 	}
 }
 
@@ -42,17 +51,8 @@ export class BadRequestError extends AppError {
 	 *
 	 * @param message Human-readable description of the bad request
 	 */
-	constructor(message: string) {
-		super(message, 400, "Bad Request");
-	}
-
-	/**
-	 * Creates a response object using the standard bad request format.
-	 *
-	 * @returns Bad request error response object
-	 */
-	public toResponse() {
-		return createBadRequestError(this.message);
+	constructor(message = "Bad Request") {
+		super(message, 400, ERROR_CODES.BAD_REQUEST);
 	}
 }
 
@@ -66,8 +66,8 @@ export class NotFoundError extends AppError {
 	 *
 	 * @param message Human-readable description of the missing resource
 	 */
-	constructor(message: string) {
-		super(message, 404, "Not Found");
+	constructor(message = "Not Found") {
+		super(message, 404, ERROR_CODES.NOT_FOUND);
 	}
 }
 
@@ -81,8 +81,8 @@ export class UnauthorizedError extends AppError {
 	 *
 	 * @param message Human-readable description of the authentication failure
 	 */
-	constructor(message: string) {
-		super(message, 401, "Unauthorized");
+	constructor(message = "Unauthorized") {
+		super(message, 401, ERROR_CODES.UNAUTHORIZED);
 	}
 }
 
@@ -96,8 +96,8 @@ export class ConflictError extends AppError {
 	 *
 	 * @param message Human-readable description of the conflict
 	 */
-	constructor(message: string) {
-		super(message, 409, "Conflict");
+	constructor(message = "Conflict") {
+		super(message, 409, ERROR_CODES.CONFLICT);
 	}
 }
 
@@ -111,7 +111,7 @@ export class InternalServerError extends AppError {
 	 *
 	 * @param message Human-readable description of the error (defaults to generic message)
 	 */
-	constructor(message: string = "Internal server error") {
-		super(message, 500, "Internal Server Error");
+	constructor(message = "Internal server error") {
+		super(message, 500, ERROR_CODES.INTERNAL_SERVER_ERROR);
 	}
 }

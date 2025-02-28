@@ -1,13 +1,21 @@
 import { z } from "@/config/zod.config";
 
+import * as examples from "./examples/user.examples";
+
 /**
  * Interface defining the structure of query parameters for user listing endpoints.
  * Supports pagination through page number and items per page.
  */
 export const GetUsersQuerySchema = z
 	.object({
-		page: z.number().optional().openapi({ description: "The page number to retrieve" }),
-		limit: z.number().optional().openapi({ description: "The number of items per page" }),
+		page: z.number().optional().openapi({
+			description: "The page number to retrieve",
+			example: examples.getUsersResponseExample.page,
+		}),
+		limit: z.number().optional().openapi({
+			description: "The number of items per page",
+			example: examples.getUsersResponseExample.limit,
+		}),
 	})
 	.openapi("GetUsersQuery");
 
@@ -17,7 +25,10 @@ export const GetUsersQuerySchema = z
  */
 export const UserParamsSchema = z
 	.object({
-		id: z.string().openapi({ description: "The ID of the user to retrieve" }),
+		id: z.string().openapi({
+			description: "The ID of the user to retrieve",
+			example: examples.userExample._id,
+		}),
 	})
 	.openapi("UserParams");
 
@@ -29,13 +40,22 @@ export const UpdateUserBodySchema = z
 	.object({
 		update: z
 			.object({
-				name: z.string().optional().openapi({ description: "The full name of the user" }),
-				email: z.string().optional().openapi({ description: "The email address of the user" }),
-				address: z.string().optional().openapi({ description: "The physical address of the user" }),
-				coordinates: z
-					.tuple([z.number(), z.number()])
-					.optional()
-					.openapi({ description: "The geographical coordinates of the user" }),
+				name: z.string().optional().openapi({
+					description: "The full name of the user",
+					example: examples.userExample.name,
+				}),
+				email: z.string().optional().openapi({
+					description: "The email address of the user",
+					example: examples.userExample.email,
+				}),
+				address: z.string().optional().openapi({
+					description: "The physical address of the user",
+					example: examples.userExample.address,
+				}),
+				coordinates: z.tuple([z.number(), z.number()]).optional().openapi({
+					description: "The geographical coordinates of the user",
+					example: examples.userExample.coordinates,
+				}),
 			})
 			.refine(
 				(data) => {
@@ -57,31 +77,58 @@ export const UpdateUserBodySchema = z
  */
 export const UserSchema = z
 	.object({
-		_id: z.string().openapi({ description: "The ID of the user" }),
-		name: z.string().openapi({ description: "The full name of the user" }),
-		email: z.string().optional().openapi({ description: "The email address of the user" }),
-		address: z.string().openapi({ description: "The physical address of the user" }),
+		_id: z
+			.string()
+			.openapi({ description: "The ID of the user", example: examples.userExample._id }),
+		name: z
+			.string()
+			.openapi({ description: "The full name of the user", example: examples.userExample.name }),
+		email: z.string().optional().openapi({
+			description: "The email address of the user",
+			example: examples.userExample.email,
+		}),
+		address: z.string().openapi({
+			description: "The physical address of the user",
+			example: examples.userExample.address,
+		}),
 		coordinates: z.tuple([z.number(), z.number()]).openapi({
 			description: "The geographical coordinates of the user",
+			example: examples.userExample.coordinates,
 		}),
-		regions: z
-			.array(z.string())
-			.openapi({ description: "The regions the user is associated with" }),
+		regions: z.array(z.string()).openapi({
+			description: "The regions the user is associated with",
+			example: examples.userExample.regions,
+		}),
 	})
 	.openapi("User");
 
 export const GetUsersResponseSchema = z
 	.object({
-		rows: z.array(UserSchema).openapi({ description: "The list of users" }),
-		page: z.number().optional().openapi({ description: "The current page number" }),
-		limit: z.number().optional().openapi({ description: "The number of items per page" }),
-		total: z.number().openapi({ description: "The total number of users" }),
+		rows: z.array(UserSchema).openapi({
+			description: "The list of users",
+			example: examples.getUsersResponseExample.rows,
+		}),
+		page: z.number().optional().openapi({
+			description: "The current page number",
+			example: examples.getUsersResponseExample.page,
+		}),
+		limit: z.number().optional().openapi({
+			description: "The number of items per page",
+			example: examples.getUsersResponseExample.limit,
+		}),
+		total: z.number().openapi({
+			description: "The total number of users",
+			example: examples.getUsersResponseExample.total,
+		}),
 	})
 	.openapi("GetUsersResponse");
 
 export const UpdateUserResponseSchema = z
 	.object({
-		status: z.number().openapi({ description: "The status code of the response" }),
+		status: z.number().openapi({
+			description: "The status code of the response",
+			example: examples.updateUserResponseExample.status,
+		}),
 	})
 	.openapi("UpdateUserResponse");
 
@@ -91,13 +138,22 @@ export const UpdateUserResponseSchema = z
  */
 export const CreateUserBodySchema = z
 	.object({
-		name: z.string().openapi({ description: "The full name of the user" }),
-		email: z.string().optional().openapi({ description: "The email address of the user" }),
-		address: z.string().optional().openapi({ description: "The physical address of the user" }),
-		coordinates: z
-			.tuple([z.number(), z.number()])
-			.optional()
-			.openapi({ description: "The geographical coordinates of the user [longitude, latitude]" }),
+		name: z.string().openapi({
+			description: "The full name of the user",
+			example: examples.createUserBodyWithAddressExample.name,
+		}),
+		email: z.string().optional().openapi({
+			description: "The email address of the user",
+			example: examples.createUserBodyWithAddressExample.email,
+		}),
+		address: z.string().optional().openapi({
+			description: "The physical address of the user",
+			example: examples.createUserBodyWithAddressExample.address,
+		}),
+		coordinates: z.tuple([z.number(), z.number()]).optional().openapi({
+			description: "The geographical coordinates of the user [longitude, latitude]",
+			example: examples.createUserBodyWithCoordinatesExample.coordinates,
+		}),
 	})
 	.refine(
 		(data) => {
@@ -118,8 +174,14 @@ export const CreateUserBodySchema = z
  */
 export const DeleteUserResponseSchema = z
 	.object({
-		status: z.number().openapi({ description: "The status code of the response" }),
-		message: z.string().openapi({ description: "Success message" }),
+		status: z.number().openapi({
+			description: "The status code of the response",
+			example: examples.deleteUserResponseExample.status,
+		}),
+		message: z.string().openapi({
+			description: "Success message",
+			example: examples.deleteUserResponseExample.message,
+		}),
 	})
 	.openapi("DeleteUserResponse");
 
@@ -132,6 +194,7 @@ export const CreateUserResponseSchema = z
 		user: UserSchema,
 		apiKey: z.string().openapi({
 			description: "The API key for authentication. Only returned once during user creation.",
+			example: examples.createUserResponseExample.apiKey,
 		}),
 	})
 	.openapi("CreateUserResponse");
@@ -143,9 +206,11 @@ export const RegenerateApiKeyResponseSchema = z
 	.object({
 		apiKey: z.string().openapi({
 			description: "The newly generated API key",
+			example: examples.regenerateApiKeyResponseExample.apiKey,
 		}),
 		message: z.string().openapi({
 			description: "Success message",
+			example: examples.regenerateApiKeyResponseExample.message,
 		}),
 	})
 	.openapi("RegenerateApiKeyResponse");

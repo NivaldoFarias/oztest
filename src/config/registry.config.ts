@@ -1,6 +1,6 @@
 import { OpenAPIRegistry } from "@asteasolutions/zod-to-openapi";
 
-import { toResponseConfig } from "@/schemas/http.schema";
+import { toResponseConfig } from "@/utils/";
 
 import * as Schemas from "../schemas/";
 

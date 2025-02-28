@@ -2,7 +2,7 @@ import type { Ref, DocumentType } from "@typegoose/typegoose";
 
 import { pre, getModelForClass, prop, modelOptions } from "@typegoose/typegoose";
 
-import { GeoCodingSingleton } from "@/utils/";
+import { GeoCoding } from "@/utils/";
 import { Base } from "@/models/base.model";
 import type { Region } from "@/models/region.model";
 import { ApiKeyService } from "@/auth/api-key.service";
@@ -10,13 +10,11 @@ import { ApiKeyService } from "@/auth/api-key.service";
 /** User model representing application users with location data */
 @pre<User>("save", async function (next) {
 	if (this.isModified("coordinates")) {
-		const { formatted_address } = await GeoCodingSingleton.getLocationFromCoordinates(
-			this.coordinates,
-		);
+		const { formatted_address } = await GeoCoding.getLocationFromCoordinates(this.coordinates);
 
 		this.address = formatted_address;
 	} else if (this.isModified("address")) {
-		const { geometry } = await GeoCodingSingleton.getLocationFromAddress(this.address);
+		const { geometry } = await GeoCoding.getLocationFromAddress(this.address);
 
 		this.coordinates = [geometry.location.lng, geometry.location.lat];
 	}

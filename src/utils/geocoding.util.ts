@@ -4,10 +4,14 @@ import { match, P } from "ts-pattern";
 import type {
 	ClientOptions,
 	GeocodeRequest,
+	GeocodeResponse,
+	GeocodeResponseData,
 	GeocodeResult,
 	LatLng,
 	LatLngLiteralVerbose,
 	ReverseGeocodeRequest,
+	ReverseGeocodeResponse,
+	ReverseGeocodeResponseData,
 } from "@googlemaps/google-maps-services-js";
 
 import { env } from "./env.util";
@@ -15,7 +19,7 @@ import { env } from "./env.util";
 /**
  * Utility class for Google Maps geolocation services
  */
-export class GeoCoding {
+class GeoCodingUtil {
 	private readonly baseConfig: GeocodeRequest = {
 		params: {
 			key: env.GEOCODING_API_KEY,
@@ -63,15 +67,11 @@ export class GeoCoding {
 	 * ```
 	 */
 	public async getLocationFromCoordinates(coordinates: LatLng) {
-		const response = await this.client.reverseGeocode(
-			this.composeRequestOptions({ latlng: coordinates } as ReverseGeocodeRequest["params"]),
-		);
+		const results = await this.reverseGeocode({
+			latlng: coordinates,
+		} as ReverseGeocodeRequest["params"]);
 
-		if (response.data.status !== Status.OK || !response.data.results.length) {
-			throw new Error(`Geocoding failed: ${response.data.status}`);
-		}
-
-		return this.findNearestLocationMatch(response.data.results, coordinates);
+		return this.findNearestLocationMatch(results, coordinates);
 	}
 
 	/**
@@ -94,15 +94,61 @@ export class GeoCoding {
 	 * ```
 	 */
 	public async getLocationFromAddress(address: string) {
-		const response = await this.client.geocode(
-			this.composeRequestOptions({ address } as GeocodeRequest["params"]),
-		);
+		const results = await this.geocode({ address } as GeocodeRequest["params"]);
 
-		if (response.data.status !== Status.OK || !response.data.results.length) {
-			throw new Error(`Geocoding failed: ${response.data.status}`);
+		return results[0];
+	}
+
+	/**
+	 * Performs geocoding using the configured provider.
+	 *
+	 * Enforces type safety and error handling for geocoding requests.
+	 *
+	 * @param params The parameters for the geocoding request
+	 * @returns The geocoding results
+	 */
+	private async geocode(params: GeocodeRequest["params"]) {
+		const response = (await this.client.geocode(this.composeRequestOptions(params))) as unknown as
+			| GeocodeResponse
+			| GeocodeResponseData;
+
+		if ("data" in response) {
+			if (response.data.status !== Status.OK || !response.data.results.length) {
+				throw new Error(`Geocoding failed: ${response.data.status}`);
+			}
+
+			return response.data.results;
+		} else if (response.status !== Status.OK || !response.results.length) {
+			throw new Error(`Geocoding failed: ${response.status}`);
 		}
 
-		return this.findNearestLocationMatch(response.data.results, address);
+		return response.results;
+	}
+
+	/**
+	 * Performs reverse geocoding using the configured provider.
+	 *
+	 * Enforces type safety and error handling for reverse geocoding requests.
+	 *
+	 * @param params The parameters for the reverse geocoding request
+	 * @returns The reverse geocoding results
+	 */
+	private async reverseGeocode(params: ReverseGeocodeRequest["params"]) {
+		const response = (await this.client.reverseGeocode(
+			this.composeRequestOptions(params),
+		)) as unknown as ReverseGeocodeResponse | ReverseGeocodeResponseData;
+
+		if ("data" in response) {
+			if (response.data.status !== Status.OK || !response.data.results.length) {
+				throw new Error(`Geocoding failed: ${response.data.status}`);
+			}
+
+			return response.data.results;
+		} else if (response.status !== Status.OK || !response.results.length) {
+			throw new Error(`Geocoding failed: ${response.status}`);
+		}
+
+		return response.results;
 	}
 
 	/**
@@ -238,4 +284,4 @@ export class GeoCoding {
  * Creates and exports a singleton instance of the GeoLib class using OpenStreetMap as the default provider.
  * This ensures all geolocation operations use the same instance and configuration.
  */
-export const GeoCodingSingleton = new GeoCoding();
+export const GeoCoding = new GeoCodingUtil();

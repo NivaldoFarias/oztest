@@ -43,12 +43,7 @@ const PUBLIC_ROUTES = ["/docs", "/documentation", "/users"];
  */
 export function setupRoutes(app: FastifyInstance) {
 	// Set up authentication middleware with public routes
-	app.addHook(
-		"onRequest",
-		createAuthMiddleware(app, {
-			publicRoutes: PUBLIC_ROUTES,
-		}),
-	);
+	app.addHook("onRequest", createAuthMiddleware(app, { publicRoutes: PUBLIC_ROUTES }));
 
 	// Register user routes
 	app.get<{ Querystring: GetUsersQuery }>(
@@ -132,7 +127,6 @@ export function setupRoutes(app: FastifyInstance) {
 		(request) => deleteUser(request, app),
 	);
 
-	// API key management routes
 	app.post<{ Reply: RegenerateApiKeyResponse }>(
 		"/auth/regenerate-key",
 		{

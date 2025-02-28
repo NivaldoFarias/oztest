@@ -32,11 +32,6 @@ export const ValidationErrorSchema = BaseErrorSchema.extend({
 }).openapi("ValidationError");
 
 /**
- * Schema for bad request errors with dynamic messages.
- */
-export const BadRequestErrorSchema = BaseErrorSchema.openapi("BadRequestError");
-
-/**
  * Formats a Zod error into a standardized validation error response.
  * Extracts useful information from Zod's error structure.
  *
@@ -57,38 +52,31 @@ export function formatZodError(error: ZodError, statusCode = 400) {
 	};
 }
 
-/**
- * Creates a generic error response object.
- *
- * @param statusCode The HTTP status code
- * @param error The error type identifier
- * @param message The human-readable error message
- *
- * @returns A formatted error object
- */
-export function createErrorResponse(statusCode: number, code: string, message: string) {
-	return {
-		statusCode,
-		code,
-		message,
-	};
-}
+export const ErrorSchemas = {
+	/** Schema for bad request errors with dynamic messages */
+	badRequest: BaseErrorSchema.openapi("BadRequestError"),
 
-/**
- * Creates a bad request error response.
- *
- * @param message The specific error message describing the bad request
- *
- * @returns A formatted bad request error object
- */
-export function createBadRequestError(message: string) {
-	return {
-		statusCode: 400,
-		code: "Bad Request",
-		message,
-	};
-}
+	/** Schema for internal server errors with dynamic messages */
+	internalError: BaseErrorSchema.openapi("InternalServerError"),
+
+	/** Schema for not found errors with dynamic messages */
+	notFound: BaseErrorSchema.openapi("NotFoundError"),
+
+	/** Schema for unauthorized errors with dynamic messages */
+	unauthorized: BaseErrorSchema.openapi("UnauthorizedError"),
+
+	/** Schema for conflict errors with dynamic messages */
+	conflict: BaseErrorSchema.openapi("ConflictError"),
+
+	/** Schema for forbidden errors with dynamic messages */
+	forbidden: BaseErrorSchema.openapi("ForbiddenError"),
+};
 
 export type BaseError = z.infer<typeof BaseErrorSchema>;
 export type ValidationError = z.infer<typeof ValidationErrorSchema>;
-export type BadRequestError = z.infer<typeof BadRequestErrorSchema>;
+export type BadRequestError = z.infer<typeof ErrorSchemas.badRequest>;
+export type InternalServerError = z.infer<typeof ErrorSchemas.internalError>;
+export type NotFoundError = z.infer<typeof ErrorSchemas.notFound>;
+export type UnauthorizedError = z.infer<typeof ErrorSchemas.unauthorized>;
+export type ConflictError = z.infer<typeof ErrorSchemas.conflict>;
+export type ForbiddenError = z.infer<typeof ErrorSchemas.forbidden>;

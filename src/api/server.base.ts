@@ -60,12 +60,10 @@ export abstract class ServerBase {
 			await this.database.initialize();
 			await this.bootstrap();
 
-			await this.app.listen({
-				port,
-				host: "0.0.0.0",
-			});
+			await this.app.listen({ port });
 
 			this.app.log.info(`🚀 Server running at http://localhost:${port}`);
+			this.app.log.info(`📦 Database status: ${this.database.getState().status}`);
 		} catch (error) {
 			this.app.log.error("Failed to start server:", error);
 

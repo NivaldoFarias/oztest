@@ -1,13 +1,14 @@
 import cors from "@fastify/cors";
 import sensible from "@fastify/sensible";
 import { serializerCompiler, validatorCompiler } from "fastify-type-provider-zod";
+import { MongoError } from "mongodb";
 import { ZodError } from "zod";
 
 import type { FastifyError, FastifyInstance } from "fastify";
 
-import { createBadRequestError, formatZodError } from "@/schemas";
+import { formatZodError } from "@/schemas";
 import { env } from "@/utils";
-import { AppError } from "@/utils/errors.util";
+import { AppError, BadRequestError, InternalServerError } from "@/utils/errors.util";
 
 import { setupOpenAPI } from "./openapi.adapter";
 
@@ -26,24 +27,28 @@ export async function setupPlugins(app: FastifyInstance) {
 	app.setValidatorCompiler(validatorCompiler);
 	app.setSerializerCompiler(serializerCompiler);
 
-	app.setErrorHandler((error: FastifyError | AppError | ZodError, request, reply) => {
+	app.setErrorHandler((error: FastifyError | AppError | ZodError | MongoError, request, reply) => {
+		request.log.error(error);
+
 		if (error instanceof AppError) {
-			return reply.status(error.statusCode).send(error.toResponse());
+			return reply.status(error.statusCode).send(error);
 		}
 
 		if (error instanceof ZodError) {
 			return reply.status(400).send(formatZodError(error));
 		}
 
+		if (error instanceof MongoError) {
+			return reply.status(500).send(new InternalServerError("A database error occurred"));
+		}
+
 		if (error.validation) {
-			// Handle Fastify validation errors (which may wrap Zod errors)
 			const zodError = error.validation[0]?.params?.error;
 			if (zodError instanceof ZodError) {
 				return reply.status(400).send(formatZodError(zodError));
 			}
 
-			// Handle other validation errors
-			return reply.status(400).send(createBadRequestError(error.message || "Validation failed"));
+			return reply.status(400).send(new BadRequestError(error.message || "Validation failed"));
 		}
 
 		if (error.statusCode) {
@@ -54,15 +59,7 @@ export async function setupPlugins(app: FastifyInstance) {
 			});
 		}
 
-		// Log unexpected errors
-		request.log.error(error);
-
-		// For all other errors, return a generic 500 error
-		reply.status(500).send({
-			statusCode: 500,
-			code: "Internal Server Error",
-			message: "An unexpected error occurred",
-		});
+		reply.status(500).send(new InternalServerError("An unexpected error occurred"));
 	});
 
 	await app.register(cors, {
