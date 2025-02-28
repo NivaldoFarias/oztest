@@ -55,5 +55,8 @@ export const REGION_TEMPLATES = {
 	],
 };
 
+/** Routes that are public and don't require authentication */
+export const PUBLIC_ROUTES = ["/docs", "/users"];
+
 export type Status = (typeof STATUS)[keyof typeof STATUS];
 export type RegionTemplate = (typeof REGION_TEMPLATES)[keyof typeof REGION_TEMPLATES];

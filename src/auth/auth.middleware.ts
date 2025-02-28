@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
 import { UserModel } from "@/models";
+import { InternalServerError, UnauthorizedError } from "@/utils";
 
 /**
  * Configuration options for the authentication middleware
@@ -40,52 +41,34 @@ export function createAuthMiddleware(app: FastifyInstance, options: AuthOptions 
 	const { publicRoutes = [] } = options;
 
 	return async (request: FastifyRequest, reply: FastifyReply) => {
-		// Skip authentication for public routes
-		if (publicRoutes.some((route) => request.url.startsWith(route))) {
-			return;
-		}
+		if (publicRoutes.some((route) => request.url.startsWith(route))) return;
 
-		// Extract API key from header
 		const apiKey = request.headers["x-api-key"] as string;
 
-		// If no API key provided, return 401
-		if (!apiKey) {
-			return reply.status(401).send({
-				statusCode: 401,
-				message: "API key is missing",
-			});
-		}
+		if (!apiKey) return reply.status(401).send(new UnauthorizedError("API key is missing"));
 
 		try {
-			// Find user with provided API key (using the hash)
 			const users = await UserModel.find();
 
-			// Find user that matches the API key
-			const user = users.find((u) => {
+			const user = users.find((user) => {
 				try {
-					return u.verifyApiKey(apiKey);
+					return user.verifyApiKey(apiKey);
 				} catch (error) {
 					return false;
 				}
 			});
 
-			// If no user found with this API key, return 401
 			if (!user) {
 				app.log.warn(`Authentication failed for API key: ${apiKey.substring(0, 8)}...`);
-				return await reply.status(401).send({
-					statusCode: 401,
-					message: "Invalid API key",
-				});
+
+				return await reply.status(401).send(new UnauthorizedError("Invalid API key"));
 			}
 
-			// Attach user to request object
 			request.user = user;
 		} catch (error) {
 			app.log.error("Authentication error:", error);
-			return reply.status(500).send({
-				statusCode: 500,
-				message: "Authentication error",
-			});
+
+			return reply.status(500).send(new InternalServerError("Authentication error"));
 		}
 	};
 }

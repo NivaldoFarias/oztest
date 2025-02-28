@@ -8,11 +8,11 @@ import * as examples from "./examples/user.examples";
  */
 export const GetUsersQuerySchema = z
 	.object({
-		page: z.number().optional().openapi({
+		page: z.number().min(1).default(1).openapi({
 			description: "The page number to retrieve",
 			example: examples.getUsersResponseExample.page,
 		}),
-		limit: z.number().optional().openapi({
+		limit: z.number().min(1).max(1_000).default(10).openapi({
 			description: "The number of items per page",
 			example: examples.getUsersResponseExample.limit,
 		}),
@@ -83,7 +83,7 @@ export const UserSchema = z
 		name: z
 			.string()
 			.openapi({ description: "The full name of the user", example: examples.userExample.name }),
-		email: z.string().optional().openapi({
+		email: z.string().email().openapi({
 			description: "The email address of the user",
 			example: examples.userExample.email,
 		}),
@@ -191,7 +191,20 @@ export const DeleteUserResponseSchema = z
  */
 export const CreateUserResponseSchema = z
 	.object({
-		user: UserSchema,
+		user: UserSchema.extend({
+			createdAt: z.date().openapi({
+				description: "The date and time the user was created",
+				example: examples.createUserResponseExample.user.createdAt.toISOString(),
+				readOnly: true,
+				format: "date-time",
+			}),
+			updatedAt: z.date().openapi({
+				description: "The date and time the user was last updated",
+				example: examples.createUserResponseExample.user.updatedAt.toISOString(),
+				readOnly: true,
+				format: "date-time",
+			}),
+		}),
 		apiKey: z.string().openapi({
 			description: "The API key for authentication. Only returned once during user creation.",
 			example: examples.createUserResponseExample.apiKey,

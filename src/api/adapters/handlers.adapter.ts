@@ -31,7 +31,6 @@ export async function getUsers(request: FastifyRequest<{ Querystring: GetUsersQu
 	const { page, limit } = request.query;
 	const [users, total] = await Promise.all([UserModel.find().lean(), UserModel.count()]);
 
-	// If no users found, return 204 No Content
 	if (users.length === 0) {
 		return { rows: [], page, limit, total: 0 };
 	}
@@ -69,34 +68,6 @@ export async function createUser(
 	try {
 		const userData = request.body;
 
-		// Handle address/coordinate conversion
-		if (userData.address && !userData.coordinates) {
-			try {
-				const locationData = await GeoCoding.getLocationFromAddress(userData.address);
-
-				userData.coordinates = [
-					locationData.geometry.location.lng,
-					locationData.geometry.location.lat,
-				];
-			} catch (error) {
-				throw new BadRequestError(
-					`Invalid address: ${error instanceof Error ? error.message : "Unknown error"}`,
-				);
-			}
-		} else if (userData.coordinates && !userData.address) {
-			try {
-				const locationData = await GeoCoding.getLocationFromCoordinates({
-					lat: userData.coordinates[1],
-					lng: userData.coordinates[0],
-				});
-				userData.address = locationData.formatted_address;
-			} catch (error) {
-				throw new BadRequestError(
-					`Invalid coordinates: ${error instanceof Error ? error.message : "Unknown error"}`,
-				);
-			}
-		}
-
 		const apiKey = ApiKeyService.generate();
 		const apiKeyHash = ApiKeyService.hash(apiKey);
 
@@ -108,8 +79,22 @@ export async function createUser(
 
 		await user.save();
 
-		return { user, apiKey };
+		return {
+			user: {
+				_id: user._id,
+				name: user.name,
+				email: user.email,
+				address: user.address,
+				coordinates: user.coordinates,
+				regions: user.regions,
+				createdAt: user.createdAt,
+				updatedAt: user.updatedAt,
+			},
+			apiKey,
+		};
 	} catch (error) {
+		console.error("ERROR", error);
+
 		if (error instanceof MongoServerError) {
 			if (error.code === 11000) {
 				throw new ConflictError("User with this email already exists");

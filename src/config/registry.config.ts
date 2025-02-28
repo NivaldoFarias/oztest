@@ -39,16 +39,16 @@ function createRegistry() {
 		);
 
 		registry.register(
-			"ErrorResponse",
-			Schemas.ErrorResponseSchema.openapi({
-				description: "Standard error response format",
+			"PaginationQuery",
+			Schemas.PaginationQuerySchema.openapi({
+				description: "Query parameters for pagination",
 			}),
 		);
 
 		registry.register(
-			"PaginationQuery",
-			Schemas.PaginationQuerySchema.openapi({
-				description: "Query parameters for pagination",
+			"Header",
+			Schemas.HeadersSchema.openapi({
+				description: "Header for API requests",
 			}),
 		);
 	}
@@ -113,6 +113,19 @@ function createRegistry() {
 	 * Includes request/response schemas for route operations.
 	 */
 	function registerRoutes() {
+		const genericResponses = {
+			400: toResponseConfig(Schemas.ErrorSchemas.badRequest, { description: "Bad request" }),
+			401: toResponseConfig(Schemas.ErrorSchemas.unauthorized, { description: "Unauthorized" }),
+			404: toResponseConfig(Schemas.ErrorSchemas.notFound, { description: "Not found" }),
+			409: toResponseConfig(Schemas.ErrorSchemas.conflict, { description: "Conflict" }),
+			500: toResponseConfig(Schemas.ErrorSchemas.internalError, {
+				description: "Internal server error",
+			}),
+			503: toResponseConfig(Schemas.ErrorSchemas.serviceUnavailable, {
+				description: "Service unavailable",
+			}),
+		};
+
 		registry.registerPath({
 			method: "get",
 			path: "/users",
@@ -120,6 +133,7 @@ function createRegistry() {
 			tags: ["users"],
 			request: {
 				query: Schemas.GetUsersQuerySchema,
+				headers: Schemas.HeadersSchema,
 			},
 			responses: {
 				200: {
@@ -130,15 +144,11 @@ function createRegistry() {
 						},
 					},
 				},
-				204: {
-					description: "No content",
-				},
-				400: toResponseConfig(Schemas.ErrorSchemas.badRequest, {
-					description: "Bad request",
-				}),
-				500: toResponseConfig(Schemas.ErrorSchemas.internalError, {
-					description: "Internal server error",
-				}),
+				204: { description: "No content" },
+				400: genericResponses[400],
+				401: genericResponses[401],
+				500: genericResponses[500],
+				503: genericResponses[503],
 			},
 		});
 
@@ -162,16 +172,14 @@ function createRegistry() {
 					description: "The created user",
 					content: {
 						"application/json": {
-							schema: Schemas.UserSchema,
+							schema: Schemas.CreateUserResponseSchema,
 						},
 					},
 				},
-				400: toResponseConfig(Schemas.ErrorSchemas.badRequest, {
-					description: "Bad request",
-				}),
-				500: toResponseConfig(Schemas.ErrorSchemas.internalError, {
-					description: "Internal server error",
-				}),
+				400: genericResponses[400],
+				409: genericResponses[409],
+				500: genericResponses[500],
+				503: genericResponses[503],
 			},
 		});
 
@@ -182,6 +190,7 @@ function createRegistry() {
 			tags: ["users"],
 			request: {
 				params: Schemas.UserParamsSchema,
+				headers: Schemas.HeadersSchema,
 			},
 			responses: {
 				200: {
@@ -192,15 +201,11 @@ function createRegistry() {
 						},
 					},
 				},
-				400: toResponseConfig(Schemas.ErrorSchemas.badRequest, {
-					description: "Bad request",
-				}),
-				404: toResponseConfig(Schemas.ErrorSchemas.notFound, {
-					description: "User not found",
-				}),
-				500: toResponseConfig(Schemas.ErrorSchemas.internalError, {
-					description: "Internal server error",
-				}),
+				400: genericResponses[400],
+				401: genericResponses[401],
+				404: genericResponses[404],
+				500: genericResponses[500],
+				503: genericResponses[503],
 			},
 		});
 
@@ -218,6 +223,7 @@ function createRegistry() {
 						},
 					},
 				},
+				headers: Schemas.HeadersSchema,
 			},
 			responses: {
 				200: {
@@ -228,12 +234,12 @@ function createRegistry() {
 						},
 					},
 				},
-				404: toResponseConfig(Schemas.ErrorSchemas.notFound, {
-					description: "User not found",
-				}),
-				500: toResponseConfig(Schemas.ErrorSchemas.internalError, {
-					description: "Internal server error",
-				}),
+				400: genericResponses[400],
+				401: genericResponses[401],
+				404: genericResponses[404],
+				409: genericResponses[409],
+				500: genericResponses[500],
+				503: genericResponses[503],
 			},
 		});
 
@@ -244,6 +250,7 @@ function createRegistry() {
 			tags: ["users"],
 			request: {
 				params: Schemas.UserParamsSchema,
+				headers: Schemas.HeadersSchema,
 			},
 			responses: {
 				200: {
@@ -254,12 +261,37 @@ function createRegistry() {
 						},
 					},
 				},
-				404: toResponseConfig(Schemas.ErrorSchemas.notFound, {
-					description: "User not found",
-				}),
-				500: toResponseConfig(Schemas.ErrorSchemas.internalError, {
-					description: "Internal server error",
-				}),
+				400: genericResponses[400],
+				401: genericResponses[401],
+				404: genericResponses[404],
+				409: genericResponses[409],
+				500: genericResponses[500],
+				503: genericResponses[503],
+			},
+		});
+
+		registry.registerPath({
+			method: "post",
+			path: "/auth/regenerate-key",
+			description: "Regenerate a user's API key",
+			tags: ["auth"],
+			request: {
+				headers: Schemas.HeadersSchema,
+			},
+			responses: {
+				200: {
+					description: "The regenerated API key",
+					content: {
+						"application/json": {
+							schema: Schemas.RegenerateApiKeyResponseSchema,
+						},
+					},
+				},
+				400: genericResponses[400],
+				401: genericResponses[401],
+				404: genericResponses[404],
+				500: genericResponses[500],
+				503: genericResponses[503],
 			},
 		});
 	}

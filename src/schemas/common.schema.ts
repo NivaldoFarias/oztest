@@ -57,19 +57,12 @@ export const createPaginatedSchema = <T extends z.ZodType>(schema: T) =>
 			meta: PaginationMetaSchema.openapi({ description: "The pagination metadata" }),
 		})
 		.openapi("PaginatedResponse");
-/**
- * Common error response schema.
- * Standardizes error responses across the API.
- */
-export const ErrorResponseSchema = z
-	.object({
-		statusCode: z.number().openapi({ description: "The HTTP status code" }),
-		error: z.string().openapi({ description: "The error message" }),
-		message: z.string().openapi({ description: "The error message" }),
-	})
-	.openapi("ErrorResponse");
+
+export const HeadersSchema = z.object({
+	"x-api-key": z.string().openapi({ description: "The API key" }),
+});
 
 export type PaginationQuery = z.infer<typeof PaginationQuerySchema>;
 export type Coordinates = z.infer<typeof CoordinatesSchema>;
 export type PaginationMeta = z.infer<typeof PaginationMetaSchema>;
-export type ErrorResponse = z.infer<typeof ErrorResponseSchema>;
+export type Headers = z.infer<typeof HeadersSchema>;

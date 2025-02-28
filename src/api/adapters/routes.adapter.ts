@@ -22,13 +22,9 @@ import {
 	UserParamsSchema,
 	UserSchema,
 } from "@/schemas";
+import { PUBLIC_ROUTES } from "@/utils/constants.util";
 
 import { createUser, deleteUser, getUserById, getUsers, updateUser } from "./handlers.adapter";
-
-/**
- * Routes that are public and don't require authentication
- */
-const PUBLIC_ROUTES = ["/docs", "/documentation", "/users"];
 
 /**
  * Configures API routes for the Fastify server instance.
@@ -42,10 +38,8 @@ const PUBLIC_ROUTES = ["/docs", "/documentation", "/users"];
  * ```
  */
 export function setupRoutes(app: FastifyInstance) {
-	// Set up authentication middleware with public routes
 	app.addHook("onRequest", createAuthMiddleware(app, { publicRoutes: PUBLIC_ROUTES }));
 
-	// Register user routes
 	app.get<{ Querystring: GetUsersQuery }>(
 		"/users",
 		{
@@ -58,6 +52,7 @@ export function setupRoutes(app: FastifyInstance) {
 						type: "null",
 					},
 					400: ErrorSchemas.badRequest,
+					401: ErrorSchemas.unauthorized,
 					500: ErrorSchemas.internalError,
 				},
 			},
@@ -73,6 +68,8 @@ export function setupRoutes(app: FastifyInstance) {
 				response: {
 					201: CreateUserResponseSchema,
 					400: ErrorSchemas.badRequest,
+					401: ErrorSchemas.unauthorized,
+					409: ErrorSchemas.conflict,
 					500: ErrorSchemas.internalError,
 				},
 			},
@@ -88,6 +85,7 @@ export function setupRoutes(app: FastifyInstance) {
 				response: {
 					200: UserSchema,
 					400: ErrorSchemas.badRequest,
+					401: ErrorSchemas.unauthorized,
 					404: ErrorSchemas.notFound,
 					500: ErrorSchemas.internalError,
 				},
@@ -104,7 +102,10 @@ export function setupRoutes(app: FastifyInstance) {
 				body: UpdateUserBodySchema,
 				response: {
 					200: UpdateUserResponseSchema,
+					400: ErrorSchemas.badRequest,
+					401: ErrorSchemas.unauthorized,
 					404: ErrorSchemas.notFound,
+					409: ErrorSchemas.conflict,
 					500: ErrorSchemas.internalError,
 				},
 			},
@@ -119,6 +120,8 @@ export function setupRoutes(app: FastifyInstance) {
 				params: UserParamsSchema,
 				response: {
 					200: DeleteUserResponseSchema,
+					400: ErrorSchemas.badRequest,
+					401: ErrorSchemas.unauthorized,
 					404: ErrorSchemas.notFound,
 					500: ErrorSchemas.internalError,
 				},
@@ -133,6 +136,7 @@ export function setupRoutes(app: FastifyInstance) {
 			schema: {
 				response: {
 					200: RegenerateApiKeyResponseSchema,
+					400: ErrorSchemas.badRequest,
 					401: ErrorSchemas.unauthorized,
 					404: ErrorSchemas.notFound,
 					500: ErrorSchemas.internalError,

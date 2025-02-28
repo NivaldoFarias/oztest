@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 
 import { UserModel } from "@/models";
+import { AppError, InternalServerError, NotFoundError } from "@/utils/";
 
 import { ApiKeyService } from "./api-key.service";
 
@@ -23,18 +24,13 @@ export async function regenerateApiKey(request: FastifyRequest, app: FastifyInst
 	try {
 		const userId = request.user._id;
 
-		// Generate a new API key
 		const newApiKey = ApiKeyService.generate();
 		const apiKeyHash = ApiKeyService.hash(newApiKey);
 
-		// Update the user with the new hashed API key
 		const user = await UserModel.findByIdAndUpdate(userId, { apiKeyHash }, { new: true });
 
-		if (!user) {
-			throw app.httpErrors.notFound("User not found");
-		}
+		if (!user) throw new NotFoundError("User not found");
 
-		// Log the successful regeneration
 		app.log.info(`API key regenerated for user ${userId}`);
 
 		return {
@@ -44,11 +40,8 @@ export async function regenerateApiKey(request: FastifyRequest, app: FastifyInst
 	} catch (error) {
 		app.log.error("Failed to regenerate API key:", error);
 
-		// If error was already created by us, pass it through
-		if ((error as any).statusCode) {
-			throw error;
-		}
+		if (error instanceof AppError) throw error;
 
-		throw app.httpErrors.internalServerError("Failed to regenerate API key");
+		throw new InternalServerError("Failed to regenerate API key");
 	}
 }

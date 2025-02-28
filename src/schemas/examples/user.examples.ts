@@ -1,35 +1,48 @@
-import type {
-	CreateUserBody,
-	CreateUserResponse,
-	DeleteUserResponse,
-	GetUsersResponse,
-	RegenerateApiKeyResponse,
-	UpdateUserBody,
-	User,
-} from "../user.schema";
+import { faker } from "@faker-js/faker";
+
+/**
+ * Generates consistent user data using Faker
+ *
+ * @param seed Optional seed to ensure consistent generation
+ * @returns A user object with consistent properties
+ */
+const generateUser = (seed?: number) => {
+	if (seed !== undefined) faker.seed(seed);
+
+	const userId = faker.string.alphanumeric(10);
+	const userName = faker.person.fullName();
+	const userEmail = faker.internet.email({
+		firstName: userName.split(" ")[0],
+		lastName: userName.split(" ")[1],
+	});
+	const userAddress = faker.location.streetAddress({ useFullAddress: true });
+	const userCoordinates: [number, number] = [
+		faker.location.longitude({ precision: 6 }),
+		faker.location.latitude({ precision: 6 }),
+	];
+	const userRegions = [
+		faker.location.county().toLowerCase(),
+		faker.location.county().toLowerCase(),
+	];
+
+	return {
+		_id: userId,
+		name: userName,
+		email: userEmail,
+		address: userAddress,
+		coordinates: userCoordinates,
+		regions: userRegions,
+	};
+};
 
 /**
  * Example user data that matches the User schema
  * Used for documentation, testing, and development
  */
-export const userExample = {
-	_id: "1234567890",
-	name: "John Doe",
-	email: "john.doe@example.com",
-	address: "123 Main St, Anytown, USA",
-	coordinates: [123.456, 78.91] as [number, number],
-	regions: ["north", "central"],
-};
+export const userExample = generateUser(1);
 
 /** Example of a user with coordinates instead of address */
-export const userWithCoordinatesExample = {
-	_id: "0987654321",
-	name: "Jane Smith",
-	email: "jane.smith@example.com",
-	address: "456 Oak Ave, Somewhere, USA",
-	coordinates: [-74.006, 40.7128] as [number, number],
-	regions: ["east", "south"],
-};
+export const userWithCoordinatesExample = generateUser(2);
 
 /** Example of a paginated users response */
 export const getUsersResponseExample = {
@@ -42,18 +55,21 @@ export const getUsersResponseExample = {
 /** Example of a user update body with address */
 export const updateUserBodyWithAddressExample = {
 	update: {
-		name: "John Doe Updated",
-		email: "john.updated@example.com",
-		address: "456 New Address St, Newtown, USA",
+		name: `${userExample.name} Updated`,
+		email: faker.internet.email({ firstName: userExample.name.split(" ")[0], lastName: "Updated" }),
+		address: faker.location.streetAddress({ useFullAddress: true }),
 	},
 };
 
 /** Example of a user update body with coordinates */
 export const updateUserBodyWithCoordinatesExample = {
 	update: {
-		name: "John Doe Updated",
-		email: "john.updated@example.com",
-		coordinates: [-122.419, 37.774] as [number, number],
+		name: `${userExample.name} Updated`,
+		email: faker.internet.email({ firstName: userExample.name.split(" ")[0], lastName: "Updated" }),
+		coordinates: [
+			faker.location.longitude({ precision: 6 }),
+			faker.location.latitude({ precision: 6 }),
+		] as [number, number],
 	},
 };
 
@@ -63,16 +79,19 @@ export const updateUserResponseExample = {
 
 /** Example of a create user body with address */
 export const createUserBodyWithAddressExample = {
-	name: "New User",
-	email: "new.user@example.com",
-	address: "789 New User St, Newville, USA",
+	name: faker.person.fullName(),
+	email: faker.internet.email(),
+	address: faker.location.streetAddress({ useFullAddress: true }),
 };
 
 /** Example of a create user body with coordinates */
 export const createUserBodyWithCoordinatesExample = {
-	name: "New User",
-	email: "new.user@example.com",
-	coordinates: [-0.1278, 51.5074] as [number, number],
+	name: faker.person.fullName(),
+	email: faker.internet.email(),
+	coordinates: [
+		faker.location.longitude({ precision: 6 }),
+		faker.location.latitude({ precision: 6 }),
+	] as [number, number],
 };
 
 /** Example of a delete user response */
@@ -83,12 +102,16 @@ export const deleteUserResponseExample = {
 
 /** Example of a create user response */
 export const createUserResponseExample = {
-	user: userExample,
-	apiKey: "api_key_example_12345abcdef",
+	user: {
+		...userExample,
+		createdAt: new Date(),
+		updatedAt: new Date(),
+	},
+	apiKey: `api_${faker.string.alphanumeric(24)}`,
 };
 
 /** Example of an API key regeneration response */
 export const regenerateApiKeyResponseExample = {
-	apiKey: "new_api_key_example_67890ghijkl",
+	apiKey: `api_${faker.string.alphanumeric(24)}`,
 	message: "API key successfully regenerated",
 };
