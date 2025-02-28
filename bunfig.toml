@@ -1,4 +1,4 @@
-preload = ["./src/config/reflect-metadata.ts"]
+preload = ["./src/core/config/reflect-metadata.ts"]
 [build]
 target = "node"
 minify = true

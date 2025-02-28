@@ -1,7 +1,7 @@
 import { setupPlugins } from "@/api/adapters/plugins.adapter";
 import { setupRateLimiting } from "@/api/middlewares/rate-limit.middleware";
 import { setupRoutes } from "@/api/routes";
-import { ServerBase } from "@/api/server.base";
+import { ServerBase } from "@/core/server/base";
 
 /**
  * Main server implementation extending the base server with Fastify-specific configurations.
