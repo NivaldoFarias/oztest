@@ -1,6 +1,15 @@
+/* eslint-disable no-console */
 import mongoose from "mongoose";
 
 import type { Connection, ConnectOptions } from "mongoose";
+
+declare interface DatabaseState {
+	connection: Connection | null;
+	status: "disconnected" | "connecting" | "connected" | "error";
+	retryCount: number;
+	maxRetries: number;
+	retryTimeout: ReturnType<typeof setTimeout> | null;
+}
 
 /**
  * Manages MongoDB database connections and lifecycle operations.
@@ -10,7 +19,13 @@ import type { Connection, ConnectOptions } from "mongoose";
  */
 export class Database {
 	private readonly mongoURI: string;
-	private connection: Connection | null = null;
+	private state: DatabaseState = {
+		connection: null,
+		status: "disconnected",
+		retryCount: 0,
+		maxRetries: 5,
+		retryTimeout: null,
+	};
 
 	/**
 	 * Creates a new Database instance with the specified MongoDB connection URI.
@@ -31,6 +46,11 @@ export class Database {
 			w: "majority",
 			readPreference: "primary",
 		},
+		private readonly retryStrategy = {
+			initialDelay: 1000,
+			maxDelay: 30000,
+			factor: 2,
+		},
 	) {
 		this.mongoURI = this.buildConnectionUri(baseUri);
 	}
@@ -41,9 +61,11 @@ export class Database {
 	 *
 	 * ## Workflow
 	 * 1. Connect to MongoDB
-	 * 2. If in development mode and shouldSeed is true, seed the database
+	 * 2. If connection is already established, return the connection
+	 * 3. If connection is not established, attempt to connect
+	 * 4. If connection fails, schedule a reconnection attempt
 	 *
-	 * @throws {Error} If the connection attempt fails due to invalid URI, network issues, or authentication problems
+	 * @returns The database connection or null if connection is already established
 	 *
 	 * @example
 	 * ```typescript
@@ -56,21 +78,77 @@ export class Database {
 	 * ```
 	 */
 	public async initialize(connectionOptions: ConnectOptions = {}) {
+		if (this.state.status === "connecting") return null;
+		else if (this.state.status === "connected" && this.state.connection) {
+			return this.state.connection;
+		} else this.state.status = "connecting";
+
 		try {
 			const { connection } = await mongoose.connect(this.mongoURI, connectionOptions);
 
-			this.connection = connection;
+			this.state.connection = connection;
+			this.state.status = "connected";
+			this.state.retryCount = 0;
+			console.log("📦 Connected to MongoDB");
+
+			connection.on("disconnected", () => {
+				console.log("MongoDB disconnected, attempting to reconnect...");
+				this.state.status = "disconnected";
+				this.scheduleReconnect();
+			});
+
+			connection.on("error", (err) => {
+				console.error("MongoDB connection error:", err);
+				this.state.status = "error";
+				this.scheduleReconnect();
+			});
 
 			return connection;
 		} catch (error) {
+			this.state.status = "error";
+			this.scheduleReconnect();
+
 			if (error instanceof Error) {
 				console.error("Database initialization failed:", error.message);
 			} else {
 				console.error("Database initialization failed with unknown error");
 			}
 
-			throw error;
+			return null;
 		}
+	}
+
+	/**
+	 * Schedules a reconnection attempt with exponential backoff
+	 *
+	 * Uses an exponential backoff algorithm to determine the time
+	 * to wait before attempting to reconnect to the database.
+	 */
+	private scheduleReconnect() {
+		if (this.state.retryTimeout) clearTimeout(this.state.retryTimeout);
+
+		if (this.state.retryCount >= this.state.maxRetries) {
+			console.log(
+				`Maximum retries (${this.state.maxRetries}) reached. Will continue retry attempts in the background.`,
+			);
+			// Reset retry count but continue trying
+			this.state.retryCount = 0;
+		}
+
+		const delay = Math.min(
+			this.retryStrategy.initialDelay * Math.pow(this.retryStrategy.factor, this.state.retryCount),
+			this.retryStrategy.maxDelay,
+		);
+
+		console.log(
+			`Scheduling database reconnection in ${delay}ms (attempt ${this.state.retryCount + 1})`,
+		);
+
+		this.state.retryTimeout = setTimeout(() => {
+			this.state.retryCount++;
+			console.log(`Attempting to reconnect to database (attempt ${this.state.retryCount})`);
+			this.initialize().catch(() => {}); // Catch to prevent unhandled promise rejection
+		}, delay);
 	}
 
 	/**
@@ -84,11 +162,20 @@ export class Database {
 	 * ```
 	 */
 	public async close() {
-		if (!this.connection) {
-			throw new Error("Database connection not established");
+		if (this.state.retryTimeout) {
+			clearTimeout(this.state.retryTimeout);
+			this.state.retryTimeout = null;
 		}
 
-		await this.connection.close();
+		if (!this.state.connection) {
+			console.log("No active database connection to close");
+			this.state.status = "disconnected";
+			return;
+		}
+
+		await this.state.connection.close();
+		this.state.connection = null;
+		this.state.status = "disconnected";
 		console.log("📦 Disconnected from MongoDB");
 	}
 
@@ -98,9 +185,9 @@ export class Database {
 	 * @throws {Error} If not connected to primary or database is not writable
 	 */
 	private async verifyPrimaryConnection() {
-		if (!this.connection) throw new Error("Database connection not established");
+		if (!this.state.connection) throw new Error("Database connection not established");
 
-		const adminDb = this.connection.db.admin();
+		const adminDb = this.state.connection.db.admin();
 
 		const { ismaster, primary, hosts } = await adminDb.command({ isMaster: 1 });
 
@@ -111,7 +198,7 @@ export class Database {
 		}
 
 		try {
-			await this.connection.db.command({ ping: 1, writeConcern: { w: "majority" } });
+			await this.state.connection.db.command({ ping: 1, writeConcern: { w: "majority" } });
 		} catch (error) {
 			if (error instanceof Error) {
 				throw new Error(`Database is not writable: ${error.message}`);
