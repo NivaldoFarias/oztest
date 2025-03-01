@@ -1,0 +1,107 @@
+name: CD
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=sha,format=long
+            type=ref,event=branch
+            latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Create .env file
+        run: |
+          cat > .env << EOL
+          SERVER_PORT=3003
+          NODE_ENV=production
+          MONGO_BASE_URI=mongodb://mongodb:27017/ozmap
+          LOG_LEVEL=info
+          CORS_ORIGIN=*
+          CORS_METHODS=GET,POST,PUT,DELETE,OPTIONS
+          CORS_CREDENTIALS=true
+          RATE_LIMIT_MAX=100
+          RATE_LIMIT_WINDOW=60000
+          MONGO_INITDB_DATABASE=ozmap
+          EOL
+
+      - name: Deploy to server
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            # Create deployment directory if it doesn't exist
+            mkdir -p ~/ozmap
+
+            # Copy docker-compose and .env files
+            scp ${{ github.workspace }}/docker/docker-compose.yml ~/ozmap/
+            scp ${{ github.workspace }}/.env ~/ozmap/
+
+            # Update docker-compose.yml to use the latest image
+            sed -i 's|build:|image: ghcr.io/${{ github.repository }}:latest|g' ~/ozmap/docker-compose.yml
+            sed -i '/context:/d' ~/ozmap/docker-compose.yml
+            sed -i '/dockerfile:/d' ~/ozmap/docker-compose.yml
+
+            # Pull the latest images and restart services
+            cd ~/ozmap
+            docker compose pull
+            docker compose up -d
+
+            # Seed the database if needed (optional, uncomment if required)
+            # docker compose exec app node dist/seed.js
+
+  # Optional job to seed the database after deployment
+  seed:
+    name: Seed Database
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Seed database
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/ozmap
+            docker compose exec -T app node dist/seed.js
