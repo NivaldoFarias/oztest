@@ -31,6 +31,8 @@ A robust RESTful API for managing users and geographic regions with advanced geo
   - [GitHub Workflows](#github-workflows)
   - [Required Secrets](#required-secrets)
   - [Manual Deployment](#manual-deployment)
+- [Requirements Checklist](#requirements-checklist)
+- [Next Steps](#next-steps)
 - [License](#license)
 
 ## Overview
@@ -708,6 +710,119 @@ To manually trigger a deployment:
 6. Click "Run workflow"
 
 For more details, see the [GitHub Workflows README](.github/workflows/README.md).
+
+## Requirements Checklist
+
+This section tracks the implementation status of all requirements specified in the OZmap challenge:
+
+### Technical Requirements
+
+- [x] Node.js 20+ compatibility
+- [x] MongoDB 7+ database
+- [x] Mongoose/Typegoose ORM
+- [x] TypeScript implementation
+- [x] ESLint + Prettier for formatting and linting
+- [x] MongoDB communication via container
+
+### User Management
+
+- [x] Complete CRUD operations for users
+- [x] User model with name, email, address, and coordinates
+- [x] Validation to ensure user provides either address OR coordinates (not both, not neither)
+- [x] Geocoding service integration for address ↔ coordinates conversion
+- [x] Proper handling of address/coordinate updates
+
+### Region Management
+
+- [x] Complete CRUD operations for regions
+- [x] Region definition using GeoJSON polygons
+- [x] Region ownership by users
+- [x] Endpoint to list regions containing a specific point
+- [x] Endpoint to list regions within a certain distance of a point
+- [x] Filtering regions by user ownership
+
+### Additional Features
+
+- [x] API key authentication (beyond the basic requirement)
+- [x] Complete API documentation
+- [ ] Internationalization
+- [ ] Basic user interface
+- [x] Code organization and clarity
+- [x] Efficient project structure
+- [x] Standardized error handling
+- [x] Organized commit history
+- [x] Logging implementation
+- [x] RESTful API best practices
+- [x] MongoDB session utilization
+
+### Extra Implemented Features
+
+- [x] **Advanced API Documentation**: Integration with Scalar API Reference for interactive documentation
+- [x] **OpenAPI Specification**: Auto-generated from Zod schemas for perfect schema/validation alignment
+- [x] **Rate Limiting**: Protection against abuse with configurable limits per endpoint
+- [x] **CORS Configuration**: Secure cross-origin resource sharing with environment-based configuration
+- [x] **Pagination System**: Sophisticated pagination with metadata for all list endpoints
+- [x] **Error Handling Framework**: Centralized error handling with consistent response format
+- [x] **Environment Validation**: Runtime validation of environment variables with sensible defaults
+- [x] **API Key Regeneration**: Endpoint to regenerate API keys for enhanced security
+- [x] **Modular Architecture**: Feature-based organization with clear separation of concerns
+- [x] **Database Seeding System**: Sophisticated seeding with realistic data generation
+- [x] **Docker Compose Setup**: Complete containerization for development and production
+- [x] **Comprehensive JSDoc Documentation**: Detailed code documentation with examples
+- [x] **Type Safety**: End-to-end type safety with Zod validation and TypeScript
+
+## Next Steps
+
+If this project were to be continued, the following enhancements would be prioritized:
+
+1. **Complete Test Suite**: Implement comprehensive unit and integration tests to achieve high code coverage.
+
+2. **CI/CD Pipeline Finalization**: Complete the setup of GitHub Actions workflows for automated testing, building, and deployment.
+
+3. **Internationalization**: Add multi-language support for error messages and API responses using i18n libraries.
+
+4. **User Interface Development**: Create a basic frontend application to interact with the API, focusing on:
+
+   - User management interface
+   - Map visualization for regions
+   - Region creation/editing with interactive polygon drawing
+
+5. **Performance Optimization**:
+
+   - Implement caching strategies for frequently accessed data
+   - Optimize database queries for large datasets
+   - Add database indexing for geospatial queries
+
+6. **Enhanced Security**:
+
+   - Implement JWT authentication with refresh tokens
+   - Add role-based access control
+   - Set up API rate limiting for all endpoints
+
+7. **Advanced Geospatial Features**:
+
+   - Region intersection and union operations
+   - Proximity alerts for users entering/exiting regions
+   - Historical location tracking and analysis
+
+8. **Monitoring and Analytics**:
+
+   - Set up application monitoring with tools like Prometheus and Grafana
+   - Implement usage analytics for API endpoints
+   - Create dashboards for system health and performance
+
+9. **Documentation Expansion**:
+
+   - Add detailed implementation guides for developers
+   - Create tutorials for common use cases
+   - Document database schema and relationships
+
+10. **Scalability Improvements**:
+    - Implement horizontal scaling capabilities
+    - Set up database sharding for large datasets
+    - Optimize for cloud deployment with Kubernetes
+
+These next steps would transform the current implementation into a production-ready, scalable geolocation platform suitable for enterprise use.
 
 ## License
 
