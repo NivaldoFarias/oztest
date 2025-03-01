@@ -9,6 +9,7 @@ declare interface DatabaseState {
 	retryCount: number;
 	maxRetries: number;
 	retryTimeout: ReturnType<typeof setTimeout> | null;
+	isClosing: boolean; // Flag to indicate if close() was called
 }
 
 /**
@@ -24,6 +25,7 @@ export class Database {
 		retryCount: 0,
 		maxRetries: 5,
 		retryTimeout: null,
+		isClosing: false,
 	};
 
 	/**
@@ -72,6 +74,9 @@ export class Database {
 	 * ```
 	 */
 	public async initialize(connectionOptions = this.connectionOptions) {
+		// Reset the closing flag
+		this.state.isClosing = false;
+
 		switch (this.state.status) {
 			case "connecting":
 				return null;
@@ -95,21 +100,36 @@ export class Database {
 			this.state.retryCount = 0;
 
 			connection.on("disconnected", () => {
-				console.log("MongoDB disconnected, attempting to reconnect...");
-				this.state.status = "disconnected";
-				this.scheduleReconnect();
+				console.log("MongoDB disconnected");
+
+				// Only attempt to reconnect if we're not intentionally closing
+				if (!this.state.isClosing) {
+					console.log("Attempting to reconnect...");
+					this.state.status = "disconnected";
+					this.scheduleReconnect();
+				} else {
+					console.log("Connection closed intentionally, not reconnecting");
+				}
 			});
 
 			connection.on("error", (error) => {
 				console.error("MongoDB connection error:", error);
-				this.state.status = "error";
-				this.scheduleReconnect();
+
+				// Only attempt to reconnect if we're not intentionally closing
+				if (!this.state.isClosing) {
+					this.state.status = "error";
+					this.scheduleReconnect();
+				}
 			});
 
 			return connection;
 		} catch (error) {
 			this.state.status = "error";
-			this.scheduleReconnect();
+
+			// Only attempt to reconnect if we're not intentionally closing
+			if (!this.state.isClosing) {
+				this.scheduleReconnect();
+			}
 
 			if (error instanceof Error) {
 				console.error("Database initialization failed:", error.message);
@@ -128,6 +148,12 @@ export class Database {
 	 * to wait before attempting to reconnect to the database.
 	 */
 	private scheduleReconnect() {
+		// Don't reconnect if we're intentionally closing
+		if (this.state.isClosing) {
+			console.log("Not scheduling reconnection because connection is being closed");
+			return;
+		}
+
 		if (this.state.retryTimeout) clearTimeout(this.state.retryTimeout);
 
 		if (this.state.retryCount >= this.state.maxRetries) {
@@ -165,6 +191,9 @@ export class Database {
 	 * ```
 	 */
 	public async close() {
+		// Set the closing flag to prevent reconnection attempts
+		this.state.isClosing = true;
+
 		if (this.state.retryTimeout) {
 			clearTimeout(this.state.retryTimeout);
 			this.state.retryTimeout = null;
@@ -176,10 +205,15 @@ export class Database {
 			return;
 		}
 
-		await this.state.connection.close();
-		this.state.connection = null;
-		this.state.status = "disconnected";
-		console.log("📦 Disconnected from MongoDB");
+		try {
+			await mongoose.disconnect();
+			this.state.connection = null;
+			this.state.status = "disconnected";
+			console.log("📦 Disconnected from MongoDB");
+		} catch (error) {
+			console.error("Error disconnecting from MongoDB:", error);
+			throw error;
+		}
 	}
 
 	/**

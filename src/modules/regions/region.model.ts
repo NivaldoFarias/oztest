@@ -1,4 +1,4 @@
-import mongoose, { Types } from "mongoose";
+import mongoose from "mongoose";
 import type { Ref } from "@typegoose/typegoose";
 
 import { pre, getModelForClass, prop, modelOptions, Severity } from "@typegoose/typegoose";
@@ -10,10 +10,6 @@ import type { User } from "@/modules/users/user.model";
 
 /** Region model representing geographical areas owned by users */
 @pre<Region>("save", async function (next) {
-	if (!this._id) {
-		this._id = new Types.ObjectId().toString();
-	}
-
 	if (this.isNew) {
 		if (this.user instanceof mongoose.Types.ObjectId) {
 			const user = await UserModel.findOne({ _id: this.user });
@@ -35,7 +31,7 @@ export class Region extends Base {
 	@prop({ required: true })
 	public name!: string;
 
-	@prop({ ref: "User", required: true, type: () => String })
+	@prop({ ref: "User", required: true })
 	public user!: Ref<User>;
 
 	@prop({ required: true, type: () => Object })

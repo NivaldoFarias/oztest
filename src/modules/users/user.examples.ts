@@ -32,6 +32,8 @@ const generateUser = (seed?: number) => {
 		address: userAddress,
 		coordinates: userCoordinates,
 		regions: userRegions,
+		createdAt: faker.date.recent(),
+		updatedAt: faker.date.recent(),
 	};
 };
 
@@ -104,8 +106,6 @@ export const deleteUserResponseExample = {
 export const createUserResponseExample = {
 	user: {
 		...userExample,
-		createdAt: new Date(),
-		updatedAt: new Date(),
 	},
 	apiKey: `api_${faker.string.alphanumeric(24)}`,
 };

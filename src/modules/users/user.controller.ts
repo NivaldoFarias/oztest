@@ -36,6 +36,15 @@ export async function getUsers(request: FastifyRequest<{ Querystring: GetUsersQu
 	const { page, limit } = request.query;
 	const [users, total] = await Promise.all([UserModel.find().lean(), UserModel.count()]);
 
+	// console.log(
+	// 	users.map(({ regions }) =>
+	// 		regions.map((region) => {
+	// 			if (typeof region === "string") return region;
+	// 			return region;
+	// 		}),
+	// 	),
+	// );
+
 	if (users.length === 0) {
 		return { rows: [], page, limit, total: 0 };
 	}

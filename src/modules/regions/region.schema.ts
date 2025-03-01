@@ -1,10 +1,10 @@
 import { z } from "@/core/config/zod.config";
 import * as examples from "@/modules/regions/region.examples";
-import { CoordinatesSchema } from "@/shared/schemas/common.schema";
+import { CoordinatesSchema, ObjectIdSchema } from "@/shared/schemas/common.schema";
 
 export const RegionParamsSchema = z
 	.object({
-		id: z.string().uuid().openapi({
+		id: ObjectIdSchema.openapi({
 			description: "Region ID",
 			example: examples.regionExample._id,
 		}),
@@ -52,7 +52,7 @@ export const UpdateRegionBodySchema = z
 
 export const RegionSchema = z
 	.object({
-		_id: z.string().openapi({
+		_id: ObjectIdSchema.openapi({
 			description: "The unique identifier for the region",
 			example: examples.regionExample._id,
 		}),
@@ -60,7 +60,7 @@ export const RegionSchema = z
 			description: "The name of the region",
 			example: examples.regionExample.name,
 		}),
-		user: z.string().openapi({
+		user: ObjectIdSchema.openapi({
 			description: "The ID of the user who owns this region",
 			example: examples.regionExample.user,
 		}),

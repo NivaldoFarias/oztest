@@ -1,4 +1,5 @@
 import { z } from "@/core/config/zod.config";
+import { ObjectIdSchema } from "@/shared/schemas/common.schema";
 
 import * as examples from "./user.examples";
 
@@ -25,7 +26,7 @@ export const GetUsersQuerySchema = z
  */
 export const UserParamsSchema = z
 	.object({
-		id: z.string().openapi({
+		id: ObjectIdSchema.openapi({
 			description: "The ID of the user to retrieve",
 			example: examples.userExample._id,
 		}),
@@ -77,9 +78,10 @@ export const UpdateUserBodySchema = z
  */
 export const UserSchema = z
 	.object({
-		_id: z
-			.string()
-			.openapi({ description: "The ID of the user", example: examples.userExample._id }),
+		_id: ObjectIdSchema.openapi({
+			description: "The ID of the user",
+			example: examples.userExample._id,
+		}),
 		name: z
 			.string()
 			.openapi({ description: "The full name of the user", example: examples.userExample.name }),
@@ -95,9 +97,19 @@ export const UserSchema = z
 			description: "The geographical coordinates of the user",
 			example: examples.userExample.coordinates,
 		}),
-		regions: z.array(z.string()).openapi({
-			description: "The regions the user is associated with",
+		regions: z.array(ObjectIdSchema).openapi({
+			description: "The regions associated with the user",
 			example: examples.userExample.regions,
+		}),
+		createdAt: z.date().optional().openapi({
+			description: "The date and time when the user was created",
+			example: examples.userExample.createdAt.toISOString(),
+			format: "date-time",
+		}),
+		updatedAt: z.date().optional().openapi({
+			description: "The date and time when the user was last updated",
+			example: examples.userExample.updatedAt.toISOString(),
+			format: "date-time",
 		}),
 	})
 	.openapi("User");
@@ -191,20 +203,7 @@ export const DeleteUserResponseSchema = z
  */
 export const CreateUserResponseSchema = z
 	.object({
-		user: UserSchema.extend({
-			createdAt: z.date().openapi({
-				description: "The date and time the user was created",
-				example: examples.createUserResponseExample.user.createdAt.toISOString(),
-				readOnly: true,
-				format: "date-time",
-			}),
-			updatedAt: z.date().openapi({
-				description: "The date and time the user was last updated",
-				example: examples.createUserResponseExample.user.updatedAt.toISOString(),
-				readOnly: true,
-				format: "date-time",
-			}),
-		}),
+		user: UserSchema,
 		apiKey: z.string().openapi({
 			description: "The API key for authentication. Only returned once during user creation.",
 			example: examples.createUserResponseExample.apiKey,

@@ -1,3 +1,5 @@
+import { Types } from "mongoose";
+
 import { z } from "@/core/config/zod.config";
 import { ErrorSchemas } from "@/core/errors/error.schema";
 import { toResponseConfig } from "@/core/utils";
@@ -81,3 +83,52 @@ export type PaginationQuery = z.infer<typeof PaginationQuerySchema>;
 export type Coordinates = z.infer<typeof CoordinatesSchema>;
 export type PaginationMeta = z.infer<typeof PaginationMetaSchema>;
 export type Headers = z.infer<typeof HeadersSchema>;
+export type ObjectId = z.infer<typeof ObjectIdSchema>;
+
+/**
+ * Custom Zod schema for MongoDB ObjectId
+ * Validates that a value is a valid MongoDB ObjectId
+ * Accepts both string representation and actual ObjectId instances
+ */
+export const ObjectIdSchema = z
+	.custom<Types.ObjectId | string>(
+		(val) => {
+			// Accept actual ObjectId instances
+			if (val instanceof Types.ObjectId) return true;
+
+			// Accept string representation of ObjectId
+			if (typeof val === "string") {
+				try {
+					// Validate the string is a valid ObjectId
+					return Types.ObjectId.isValid(val);
+				} catch {
+					return false;
+				}
+			}
+
+			// Accept object with toString method (MongoDB returns these)
+			if (
+				val &&
+				typeof val === "object" &&
+				"toString" in val &&
+				typeof val.toString === "function"
+			) {
+				try {
+					const str = val.toString();
+					return Types.ObjectId.isValid(str);
+				} catch {
+					return false;
+				}
+			}
+
+			return false;
+		},
+		{
+			message: "Invalid MongoDB ObjectId",
+		},
+	)
+	.openapi({
+		type: "string",
+		description: "MongoDB ObjectId",
+		example: new Types.ObjectId().toString(),
+	});

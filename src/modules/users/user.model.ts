@@ -35,7 +35,7 @@ export class User extends Base {
 	@prop({ required: true, type: () => [Number] })
 	public coordinates!: [number, number];
 
-	@prop({ required: true, default: [], ref: "Region", type: () => String })
+	@prop({ required: true, default: [], ref: "Region" })
 	public regions!: Ref<Region>[];
 
 	@prop({ required: true })
