@@ -5,7 +5,7 @@ import type { Connection } from "mongoose";
 
 import type { SeedOptions } from "@/shared/schemas/seed.schema";
 
-import { ApiKeyUtil, GeoCoding, REGION_TEMPLATES } from "@/core/utils";
+import { ApiKeyUtil, GeoCoding, PaginationUtil, REGION_TEMPLATES } from "@/core/utils";
 import { RegionModel } from "@/modules/regions/region.model";
 import { UserModel } from "@/modules/users/user.model";
 import { defaultSeedOptions, seedOptionsSchema } from "@/shared/schemas/seed.schema";
@@ -191,13 +191,133 @@ export class DatabaseSeeder {
 	}
 
 	/**
+	 * Clears existing data from the database.
+	 * Removes all users and regions to start with a clean slate.
+	 *
+	 * @returns Summary of deleted documents
+	 */
+	private async clearExistingData(): Promise<{ users: number; regions: number }> {
+		console.log("Clearing existing data...");
+
+		const [userResult, regionResult] = await Promise.all([
+			UserModel.deleteMany({}),
+			RegionModel.deleteMany({}),
+		]);
+
+		console.log(
+			`Deleted ${userResult.deletedCount} users and ${regionResult.deletedCount} regions`,
+		);
+
+		return {
+			users: userResult.deletedCount || 0,
+			regions: regionResult.deletedCount || 0,
+		};
+	}
+
+	/**
+	 * Creates users in batches for better performance.
+	 *
+	 * @param count Total number of users to create
+	 * @param options Seeding options
+	 * @param locations Generated locations
+	 * @param batchSize Number of users to create in each batch
+	 * @returns Array of created users
+	 */
+	private async createUsersBatch(
+		count: number,
+		options: SeedOptions,
+		locations: Array<Location>,
+		batchSize: number,
+	): Promise<Array<{ user: any; apiKey: string }>> {
+		const createdUsers: Array<{ user: any; apiKey: string }> = [];
+		const batches: number = Math.ceil(count / batchSize);
+
+		console.log(
+			`Creating ${count} users in ${batches} batches of up to ${batchSize} users each...`,
+		);
+
+		for (let batchIndex = 0; batchIndex < batches; batchIndex++) {
+			// Calculate batch boundaries
+			const batchStart: number = batchIndex * batchSize;
+			const batchEnd: number = Math.min(batchStart + batchSize, count);
+			const currentBatchSize: number = batchEnd - batchStart;
+
+			console.log(`Processing batch ${batchIndex + 1}/${batches} (${currentBatchSize} users)...`);
+
+			const userBatch: Array<any> = [];
+			const userApiKeys: Array<string> = [];
+
+			// Prepare batch of users
+			for (let i = 0; i < currentBatchSize; i++) {
+				const userIndex = batchStart + i;
+				const firstName = faker.person.firstName();
+				const lastName = faker.person.lastName();
+				const location = locations[userIndex % locations.length];
+
+				// Generate user data with prefix if specified
+				const name =
+					options.userNamePrefix ?
+						`${options.userNamePrefix} ${firstName} ${lastName}`
+					:	`${firstName} ${lastName}`;
+
+				// Use specified domain for email
+				const email = faker.internet
+					.email({
+						firstName,
+						lastName,
+						provider: options.emailDomain,
+					})
+					.toLowerCase();
+
+				// Generate API key
+				const apiKey = ApiKeyUtil.generate();
+				const apiKeyHash = ApiKeyUtil.hash(apiKey);
+
+				userBatch.push({
+					name,
+					email,
+					address: location.address,
+					coordinates: location.coordinates,
+					regions: [],
+					apiKeyHash,
+				});
+
+				userApiKeys.push(apiKey);
+			}
+
+			try {
+				// Create batch of users
+				const createdBatch = await UserModel.create(userBatch);
+
+				// Add created users to result array with their API keys
+				for (let i = 0; i < createdBatch.length; i++) {
+					createdUsers.push({
+						user: createdBatch[i],
+						apiKey: userApiKeys[i],
+					});
+				}
+
+				console.log(`Created ${createdBatch.length} users in batch ${batchIndex + 1}`);
+			} catch (error) {
+				const errorMsg = this.formatErrorMessage(error);
+				console.error(`Failed to create user batch ${batchIndex + 1}: ${errorMsg}`);
+				console.error("Continuing with next batch...");
+			}
+		}
+
+		return createdUsers;
+	}
+
+	/**
 	 * Seeds the database with test data.
 	 *
 	 * ## Workflow
 	 * 1. Validate options
-	 * 2. Generate locations and region templates
-	 * 3. Create users and their regions
-	 * 4. Return summary of created data
+	 * 2. Clear existing data if requested
+	 * 3. Generate locations and region templates
+	 * 4. Create users in batches
+	 * 5. Create regions for each user
+	 * 6. Return summary of created data
 	 *
 	 * @param options - Options for controlling the seeding process
 	 * @returns Summary of the seeding operation
@@ -229,6 +349,11 @@ export class DatabaseSeeder {
 		);
 
 		try {
+			// Clear existing data if requested
+			if (validatedOptions.clearExistingData) {
+				await this.clearExistingData();
+			}
+
 			// Generate locations and region templates
 			console.log(`Generating ${validatedOptions.citiesCount} locations...`);
 			const locations = await this.generateLocations(
@@ -239,54 +364,33 @@ export class DatabaseSeeder {
 			console.log(`Generating ${validatedOptions.templatesCount} region templates...`);
 			const regionTemplates = this.generateRegionTemplates(validatedOptions.templatesCount);
 
-			// Create users and regions
-			console.log(`Creating ${validatedOptions.userCount} users with regions...`);
+			// Create users in batches
+			const createdUsers = await this.createUsersBatch(
+				validatedOptions.userCount,
+				validatedOptions,
+				locations,
+				validatedOptions.batchSize,
+			);
 
-			const createdUsers = [];
+			if (createdUsers.length === 0) {
+				throw new Error("Failed to create any users");
+			}
+
+			// Create regions for each user
+			console.log(`Creating regions for ${createdUsers.length} users...`);
 			const createdRegions = [];
 
-			// Process users one by one to avoid overwhelming the database
-			for (let i = 0; i < validatedOptions.userCount; i++) {
+			for (const { user } of createdUsers) {
 				try {
-					// Generate user data
-					const firstName = faker.person.firstName();
-					const lastName = faker.person.lastName();
-					const location = locations[i % locations.length];
-
-					// Use a consistent domain to avoid validation issues
-					const email = faker.internet
-						.email({
-							firstName,
-							lastName,
-							provider: "example.com",
-						})
-						.toLowerCase();
-
-					// Create user without session (no transactions)
-					const { user, apiKey } = await this.createUser({
-						name: `${firstName} ${lastName}`,
-						email,
-						address: location.address,
-						coordinates: location.coordinates,
-					});
-
-					console.log(`Created user: ${user.name} (API Key: ${apiKey.substring(0, 8)}...)`);
-					createdUsers.push(user);
-
-					// Create regions for user without session (no transactions)
 					const regions = await this.createRegionsForUser(user, validatedOptions, regionTemplates);
 
 					console.log(`Created ${regions.length} regions for user: ${user.name}`);
 					createdRegions.push(...regions);
 				} catch (error) {
 					const errorMsg = this.formatErrorMessage(error);
-					console.error(`Failed to create user ${i + 1}: ${errorMsg}`);
+					console.error(`Failed to create regions for user ${user.name}: ${errorMsg}`);
 					console.error("Continuing with next user...");
 				}
-			}
-
-			if (createdUsers.length === 0) {
-				throw new Error("Failed to create any users");
 			}
 
 			console.log("Database seeding completed successfully!");
@@ -301,40 +405,6 @@ export class DatabaseSeeder {
 			console.error("Error seeding database:", errorMsg);
 			throw error;
 		}
-	}
-
-	/**
-	 * Creates a user with the specified data.
-	 *
-	 * @param userData The user data to create
-	 * @returns The created user and API key
-	 */
-	private async createUser(userData: {
-		name: string;
-		email: string;
-		address: string;
-		coordinates: [number, number];
-	}) {
-		// Generate API key for the user
-		const apiKey = ApiKeyUtil.generate();
-		const apiKeyHash = ApiKeyUtil.hash(apiKey);
-
-		// Check if a user with this email already exists
-		const existingUser = await UserModel.findOne({ email: userData.email });
-		if (existingUser) {
-			console.log(`User with email ${userData.email} already exists, skipping creation`);
-			return { user: existingUser, apiKey };
-		}
-
-		// Create the user without transactions
-		const user = await UserModel.create({
-			...userData,
-			apiKeyHash,
-			// Ensure regions array is initialized
-			regions: [],
-		});
-
-		return { user, apiKey };
 	}
 
 	/**
@@ -354,16 +424,25 @@ export class DatabaseSeeder {
 			options.regionsPerUser.min +
 			Math.floor(Math.random() * (options.regionsPerUser.max - options.regionsPerUser.min + 1));
 
-		const regions = Array.from({ length: numRegions }, () => ({
-			name: `${faker.location.county()} ${
-				regionTemplates[Math.floor(Math.random() * regionTemplates.length)]
-			}`,
-			user: user._id,
-			geometry: {
-				type: "Polygon" as const,
-				coordinates: this.generatePolygonCoordinates(user.coordinates),
-			},
-		}));
+		const regions = Array.from({ length: numRegions }, () => {
+			const countyName = faker.location.county();
+			const templateName = regionTemplates[Math.floor(Math.random() * regionTemplates.length)];
+
+			// Apply region name prefix if specified
+			const name =
+				options.regionNamePrefix ?
+					`${options.regionNamePrefix} ${countyName} ${templateName}`
+				:	`${countyName} ${templateName}`;
+
+			return {
+				name,
+				user: user._id,
+				geometry: {
+					type: "Polygon" as const,
+					coordinates: this.generatePolygonCoordinates(user.coordinates),
+				},
+			};
+		});
 
 		const createdRegions = await RegionModel.create(regions);
 
@@ -373,5 +452,72 @@ export class DatabaseSeeder {
 		});
 
 		return createdRegions;
+	}
+
+	/**
+	 * Retrieves statistics about the seeded data.
+	 * Uses the pagination utility to get counts and samples of the data.
+	 *
+	 * @returns Statistics about the seeded data
+	 */
+	public async getStatistics() {
+		// Get user statistics
+		const userResult = await PaginationUtil.paginate(UserModel, {
+			page: 1,
+			limit: 5,
+			sortBy: "createdAt",
+			sortDirection: "desc",
+		});
+
+		// Get region statistics
+		const regionResult = await PaginationUtil.paginate(RegionModel, {
+			page: 1,
+			limit: 5,
+			sortBy: "createdAt",
+			sortDirection: "desc",
+		});
+
+		// Get user count by email domain
+		const emailDomains = await UserModel.aggregate([
+			{
+				$group: {
+					_id: {
+						$regexExtract: {
+							input: "$email",
+							regex: /@(.+)$/,
+							options: "",
+							index: 1,
+						},
+					},
+					count: { $sum: 1 },
+				},
+			},
+			{ $sort: { count: -1 } },
+			{ $limit: 5 },
+		]);
+
+		return {
+			users: {
+				total: userResult.meta.totalItems,
+				samples: userResult.data.map((user) => ({
+					id: user._id,
+					name: user.name,
+					email: user.email,
+					regionsCount: user.regions.length,
+				})),
+			},
+			regions: {
+				total: regionResult.meta.totalItems,
+				samples: regionResult.data.map((region) => ({
+					id: region._id,
+					name: region.name,
+					userId: region.user,
+				})),
+			},
+			emailDomains: emailDomains.map((domain) => ({
+				domain: domain._id,
+				count: domain.count,
+			})),
+		};
 	}
 }

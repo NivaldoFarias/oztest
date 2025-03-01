@@ -129,6 +129,55 @@ export const DeleteRegionResponseSchema = z
 	})
 	.openapi("DeleteRegionResponse");
 
+/**
+ * Enhanced response schema for paginated region listings.
+ * Includes both data array and comprehensive pagination metadata.
+ */
+export const GetRegionsEnhancedResponseSchema = z
+	.object({
+		data: z.array(RegionSchema).openapi({
+			description: "The list of regions",
+			example: examples.getRegionsResponseExample.rows,
+		}),
+		meta: z
+			.object({
+				currentPage: z.number().openapi({
+					description: "The current page number",
+					example: examples.getRegionsResponseExample.page,
+				}),
+				itemsPerPage: z.number().openapi({
+					description: "The number of items per page",
+					example: examples.getRegionsResponseExample.limit,
+				}),
+				totalItems: z.number().openapi({
+					description: "The total number of regions",
+					example: examples.getRegionsResponseExample.total,
+				}),
+				totalPages: z.number().openapi({
+					description: "The total number of pages",
+					example: Math.ceil(
+						examples.getRegionsResponseExample.total / examples.getRegionsResponseExample.limit,
+					),
+				}),
+				hasNextPage: z.boolean().openapi({
+					description: "Whether there is a next page",
+					example:
+						examples.getRegionsResponseExample.page <
+						Math.ceil(
+							examples.getRegionsResponseExample.total / examples.getRegionsResponseExample.limit,
+						),
+				}),
+				hasPreviousPage: z.boolean().openapi({
+					description: "Whether there is a previous page",
+					example: examples.getRegionsResponseExample.page > 1,
+				}),
+			})
+			.openapi({
+				description: "Pagination metadata",
+			}),
+	})
+	.openapi("GetRegionsEnhancedResponse");
+
 export type RegionParams = z.infer<typeof RegionParamsSchema>;
 export type CreateRegionBody = z.infer<typeof CreateRegionBodySchema>;
 export type UpdateRegionBody = z.infer<typeof UpdateRegionBodySchema>;
@@ -136,3 +185,4 @@ export type Region = z.infer<typeof RegionSchema>;
 export type GetRegionsResponse = z.infer<typeof GetRegionsResponseSchema>;
 export type UpdateRegionResponse = z.infer<typeof UpdateRegionResponseSchema>;
 export type DeleteRegionResponse = z.infer<typeof DeleteRegionResponseSchema>;
+export type GetRegionsEnhancedResponse = z.infer<typeof GetRegionsEnhancedResponseSchema>;

@@ -6,6 +6,7 @@ import * as examples from "./user.examples";
 /**
  * Interface defining the structure of query parameters for user listing endpoints.
  * Supports pagination through page number and items per page.
+ * Includes filtering and sorting options for enhanced querying capabilities.
  */
 export const GetUsersQuerySchema = z
 	.object({
@@ -16,6 +17,22 @@ export const GetUsersQuerySchema = z
 		limit: z.number().min(1).max(1_000).default(10).openapi({
 			description: "The number of items per page",
 			example: examples.getUsersResponseExample.limit,
+		}),
+		sortBy: z.enum(["name", "email", "createdAt", "updatedAt"]).optional().openapi({
+			description: "Field to sort by",
+			example: "createdAt",
+		}),
+		sortDirection: z.enum(["asc", "desc"]).optional().default("asc").openapi({
+			description: "Sort direction (ascending or descending)",
+			example: "desc",
+		}),
+		name: z.string().optional().openapi({
+			description: "Filter users by name (partial match)",
+			example: "John",
+		}),
+		email: z.string().optional().openapi({
+			description: "Filter users by email (partial match)",
+			example: "john@example.com",
 		}),
 	})
 	.openapi("GetUsersQuery");
@@ -211,6 +228,55 @@ export const CreateUserResponseSchema = z
 	})
 	.openapi("CreateUserResponse");
 
+/**
+ * Enhanced response schema for paginated user listings.
+ * Includes both data array and comprehensive pagination metadata.
+ */
+export const GetUsersEnhancedResponseSchema = z
+	.object({
+		data: z.array(UserSchema).openapi({
+			description: "The list of users",
+			example: examples.getUsersResponseExample.rows,
+		}),
+		meta: z
+			.object({
+				currentPage: z.number().openapi({
+					description: "The current page number",
+					example: examples.getUsersResponseExample.page,
+				}),
+				itemsPerPage: z.number().openapi({
+					description: "The number of items per page",
+					example: examples.getUsersResponseExample.limit,
+				}),
+				totalItems: z.number().openapi({
+					description: "The total number of users",
+					example: examples.getUsersResponseExample.total,
+				}),
+				totalPages: z.number().openapi({
+					description: "The total number of pages",
+					example: Math.ceil(
+						examples.getUsersResponseExample.total / examples.getUsersResponseExample.limit,
+					),
+				}),
+				hasNextPage: z.boolean().openapi({
+					description: "Whether there is a next page",
+					example:
+						examples.getUsersResponseExample.page <
+						Math.ceil(
+							examples.getUsersResponseExample.total / examples.getUsersResponseExample.limit,
+						),
+				}),
+				hasPreviousPage: z.boolean().openapi({
+					description: "Whether there is a previous page",
+					example: examples.getUsersResponseExample.page > 1,
+				}),
+			})
+			.openapi({
+				description: "Pagination metadata",
+			}),
+	})
+	.openapi("GetUsersEnhancedResponse");
+
 export type GetUsersQuery = z.infer<typeof GetUsersQuerySchema>;
 export type UserParams = z.infer<typeof UserParamsSchema>;
 export type UpdateUserBody = z.infer<typeof UpdateUserBodySchema>;
@@ -220,3 +286,4 @@ export type User = z.infer<typeof UserSchema>;
 export type CreateUserBody = z.infer<typeof CreateUserBodySchema>;
 export type DeleteUserResponse = z.infer<typeof DeleteUserResponseSchema>;
 export type CreateUserResponse = z.infer<typeof CreateUserResponseSchema>;
+export type GetUsersEnhancedResponse = z.infer<typeof GetUsersEnhancedResponseSchema>;

@@ -40,7 +40,14 @@ export function registerRegionSchemas(registry: OpenAPIRegistry) {
 	registry.register(
 		"GetRegionsResponse",
 		RegionSchemas.GetRegionsResponseSchema.openapi({
-			description: "Response for region listing",
+			description: "Response for region listing (legacy format)",
+		}),
+	);
+
+	registry.register(
+		"GetRegionsEnhancedResponse",
+		RegionSchemas.GetRegionsEnhancedResponseSchema.openapi({
+			description: "Enhanced response for region listing with detailed pagination metadata",
 		}),
 	);
 

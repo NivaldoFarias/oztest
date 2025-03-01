@@ -11,7 +11,7 @@ export function registerUserSchemas(registry: OpenAPIRegistry) {
 	registry.register(
 		"GetUsersQuery",
 		UserSchemas.GetUsersQuerySchema.openapi({
-			description: "Query parameters for user listing",
+			description: "Query parameters for user listing with enhanced filtering and sorting",
 		}),
 	);
 
@@ -39,7 +39,14 @@ export function registerUserSchemas(registry: OpenAPIRegistry) {
 	registry.register(
 		"GetUsersResponse",
 		UserSchemas.GetUsersResponseSchema.openapi({
-			description: "Response for user listing",
+			description: "Response for user listing (legacy format)",
+		}),
+	);
+
+	registry.register(
+		"GetUsersEnhancedResponse",
+		UserSchemas.GetUsersEnhancedResponseSchema.openapi({
+			description: "Enhanced response for user listing with detailed pagination metadata",
 		}),
 	);
 

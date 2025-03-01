@@ -16,15 +16,17 @@ import {
 	ERROR_CODES,
 	GeoCoding,
 	NotFoundError,
+	PaginationUtil,
 	STATUS,
 } from "@/core/utils";
 import { ApiKeyUtil } from "@/core/utils/api-key.util";
 import { UserModel } from "@/modules/users/user.model";
 
 /**
- * Retrieves a paginated list of users with optional pagination parameters.
+ * Retrieves a paginated list of users with enhanced filtering and sorting options.
+ * Supports filtering by name and email, as well as sorting by various fields.
  *
- * @param request The Fastify request containing pagination query parameters
+ * @param request The Fastify request containing pagination and filtering query parameters
  *
  * @example
  * ```typescript
@@ -33,31 +35,39 @@ import { UserModel } from "@/modules/users/user.model";
  * ```
  */
 export async function getUsers(request: FastifyRequest<{ Querystring: GetUsersQuery }>) {
-	const { page, limit } = request.query;
-	const [users, total] = await Promise.all([UserModel.find().lean(), UserModel.count()]);
+	const { page, limit, sortBy, sortDirection, name, email } = request.query;
 
-	// console.log(
-	// 	users.map(({ regions }) =>
-	// 		regions.map((region) => {
-	// 			if (typeof region === "string") return region;
-	// 			return region;
-	// 		}),
-	// 	),
-	// );
+	// Build filter object based on query parameters
+	const filter: Record<string, any> = {};
 
-	if (users.length === 0) {
-		return { rows: [], page, limit, total: 0 };
+	if (name) {
+		filter.name = { $regex: name, $options: "i" }; // Case-insensitive partial match
 	}
 
-	return {
-		rows: users.map((user) => ({
-			...user,
-			regions: user.regions.map((region) => (typeof region === "string" ? region : region._id)),
-		})),
+	if (email) {
+		filter.email = { $regex: email, $options: "i" }; // Case-insensitive partial match
+	}
+
+	// Use the pagination utility to handle pagination, filtering, and sorting
+	const result = await PaginationUtil.paginate(UserModel, {
 		page,
 		limit,
-		total,
-	};
+		filter,
+		sortBy: sortBy as string,
+		sortDirection,
+	});
+
+	// Process the results to ensure regions are properly formatted
+	const processedData = result.data.map((user) => ({
+		...user,
+		regions: user.regions.map((region) => (typeof region === "string" ? region : region._id)),
+	}));
+
+	// Return in the legacy format for backward compatibility
+	return PaginationUtil.toLegacyFormat({
+		data: processedData,
+		meta: result.meta,
+	});
 }
 
 /**

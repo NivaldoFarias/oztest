@@ -44,6 +44,37 @@ export const seedOptionsSchema = z
 			.boolean()
 			.default(false)
 			.describe("Whether to use real geocoding service or generate mock data"),
+
+		userNamePrefix: z
+			.string()
+			.optional()
+			.default("")
+			.describe("Optional prefix for user names to easily identify seeded users"),
+
+		regionNamePrefix: z
+			.string()
+			.optional()
+			.default("")
+			.describe("Optional prefix for region names to easily identify seeded regions"),
+
+		emailDomain: z
+			.string()
+			.optional()
+			.default("example.com")
+			.describe("Domain to use for generated email addresses"),
+
+		clearExistingData: z
+			.boolean()
+			.default(false)
+			.describe("Whether to clear existing data before seeding"),
+
+		batchSize: z
+			.number()
+			.int()
+			.min(1)
+			.max(100)
+			.default(10)
+			.describe("Number of documents to create in a single batch operation"),
 	})
 	.describe("Options for controlling the database seeding process");
 
@@ -60,6 +91,11 @@ export const defaultSeedOptions = {
 	citiesCount: 50,
 	templatesCount: 20,
 	useRealGeocoding: false,
+	userNamePrefix: "",
+	regionNamePrefix: "",
+	emailDomain: "example.com",
+	clearExistingData: false,
+	batchSize: 10,
 };
 
 /**

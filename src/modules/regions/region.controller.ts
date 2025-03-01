@@ -9,35 +9,36 @@ import type {
 } from "@/modules/regions/region.schema";
 import type { GetUsersQuery } from "@/modules/users/user.schema";
 
-import { AppError, BadRequestError, NotFoundError, STATUS } from "@/core/utils";
+import { AppError, BadRequestError, NotFoundError, PaginationUtil, STATUS } from "@/core/utils";
 import { RegionModel } from "@/modules/regions/region.model";
 import { UserModel } from "@/modules/users/user.model";
 
 /**
- * Retrieves a paginated list of regions with optional pagination parameters.
+ * Retrieves a paginated list of regions with enhanced filtering and sorting options.
+ * Supports pagination, sorting, and filtering through query parameters.
  *
- * @param request The Fastify request containing pagination query parameters
+ * @param request The Fastify request containing pagination and filtering query parameters
  */
 export async function getRegions(request: FastifyRequest<{ Querystring: GetUsersQuery }>) {
-	const { page, limit } = request.query;
-	const [regions, total] = await Promise.all([RegionModel.find().lean(), RegionModel.count()]);
+	const { page, limit, sortBy, sortDirection } = request.query;
 
-	if (regions.length === 0) {
-		return { rows: [], page, limit, total: 0 };
-	}
-
-	return {
-		rows: regions,
+	// Use the pagination utility to handle pagination, filtering, and sorting
+	const result = await PaginationUtil.paginate(RegionModel, {
 		page,
 		limit,
-		total,
-	};
+		sortBy: sortBy as string,
+		sortDirection,
+	});
+
+	// Return in the legacy format for backward compatibility
+	return PaginationUtil.toLegacyFormat(result);
 }
 
 /**
  * Retrieves regions belonging to the specified user.
+ * Supports pagination, sorting, and filtering through query parameters.
  *
- * @param request The Fastify request containing the user ID parameter
+ * @param request The Fastify request containing the user ID parameter and query parameters
  * @param app The Fastify instance for error handling
  * @throws {NotFoundError} If user with specified ID doesn't exist
  */
@@ -46,22 +47,22 @@ export async function getUserRegions(
 	app: FastifyInstance,
 ) {
 	const { userId } = request.params;
-	const { page, limit } = request.query;
+	const { page, limit, sortBy, sortDirection } = request.query;
 
 	const user = await UserModel.findOne({ _id: userId }).lean();
 	if (!user) throw new NotFoundError("User not found");
 
-	const [regions, total] = await Promise.all([
-		RegionModel.find({ user: userId }).lean(),
-		RegionModel.countDocuments({ user: userId }),
-	]);
-
-	return {
-		rows: regions,
+	// Use the pagination utility to handle pagination, filtering, and sorting
+	const result = await PaginationUtil.paginate(RegionModel, {
 		page,
 		limit,
-		total,
-	};
+		filter: { user: userId },
+		sortBy: sortBy as string,
+		sortDirection,
+	});
+
+	// Return in the legacy format for backward compatibility
+	return PaginationUtil.toLegacyFormat(result);
 }
 
 /**
